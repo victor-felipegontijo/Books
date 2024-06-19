@@ -1,10 +1,15 @@
-To create a vectorized version of `single_asset_trajectory` that generates random integer price increments for an array of `EquityAsset` objects, you can use `np.random.randint` with the appropriate shape to handle multiple trajectories simultaneously.
+I understand your requirements better now. You want to generate a 2D array where each row corresponds to a different equity asset and each column represents a price increment.
 
-Here's how you can modify the `single_asset_trajectory_vectorized` function to generate random integer increments and create the corresponding usage example:
+Let’s revise the function and address the specific requirements:
 
-### Updated Code
+	•	The output should be a 2D array of size  M \times N , where  M = \text{len(initial\_prices)} .
+	•	Each row should represent an equity asset.
+	•	Each column should represent a price increment.
 
-```python
+Given this, let’s rework the code:
+
+Revised Code
+
 import numpy as np
 import multiprocessing as mp
 
@@ -18,11 +23,11 @@ class EquityAsset:
         return f"EquityAsset({self.name}, {self.initial_price})"
 
 # Vectorized single_asset_trajectory function with random integer increments
-def single_asset_trajectory_vectorized(initial_prices, N, K, num_steps=100):
+def single_asset_trajectory_vectorized(initial_prices, N, K):
     # Generate random integer increments for all initial prices
-    increments = np.random.randint(0, K, (N, len(initial_prices), num_steps))
-    trajectories = np.cumsum(increments, axis=2)  # Cumulative sum to simulate price paths
-    trajectories += initial_prices[:, np.newaxis, np.newaxis]
+    increments = np.random.randint(0, K, (len(initial_prices), N))
+    trajectories = np.cumsum(increments, axis=1)  # Cumulative sum to simulate price paths
+    trajectories += initial_prices[:, np.newaxis]  # Add initial prices to each trajectory
     return trajectories
 
 # Function to parallelize the generation of trajectories for an array of EquityAsset objects
@@ -34,14 +39,14 @@ def generate_all_trajectories(eqAssetsArray, N, K):
         results = pool.starmap(single_asset_trajectory_vectorized, [(chunk, N, K) for chunk in chunks])
     
     # Concatenate results from all processes
-    return np.concatenate(results, axis=1)
+    return np.concatenate(results, axis=0)
 
 # Example usage
 if __name__ == "__main__":
     # Create an array of EquityAsset objects
     eqAssetsArray = np.array([EquityAsset("Asset1", 100), EquityAsset("Asset2", 150), EquityAsset("Asset3", 200)])
 
-    # Number of trajectories to generate for each EquityAsset
+    # Number of price increments to generate for each EquityAsset
     N = 10
     
     # Maximum random increment
@@ -53,34 +58,37 @@ if __name__ == "__main__":
     # Print the results
     for i, eqAsset in enumerate(eqAssetsArray):
         print(f"Trajectories for {eqAsset.name}:")
-        for j in range(N):
-            print(all_trajectories[j, i])
-```
+        print(all_trajectories[i])
 
-### Explanation
+Explanation
 
-1. **Vectorized `single_asset_trajectory_vectorized` Function**:
-   - This function takes an array of initial prices, the number of trajectories (`N`), and the maximum random increment (`K`).
-   - `increments = np.random.randint(0, K, (N, len(initial_prices), num_steps))` generates a 3D array of random integers between 0 and `K` for all initial prices and trajectories.
-   - `np.cumsum(increments, axis=2)` computes the cumulative sum along the time axis to simulate price paths.
-   - `trajectories += initial_prices[:, np.newaxis, np.newaxis]` shifts the trajectories to start at the given initial prices.
+	1.	Generating Random Increments:
 
-2. **Parallel Processing in `generate_all_trajectories`**:
-   - Initial prices are split into chunks for parallel processing using `np.array_split`.
-   - `multiprocessing.Pool` is used to parallelize the computation of trajectories.
-   - `pool.starmap` applies the vectorized function to each chunk of initial prices along with the number of trajectories and the maximum random increment.
-   - The results from all processes are concatenated to form the final array of trajectories.
+increments = np.random.randint(0, K, (len(initial_prices), N))
 
-3. **Example Usage**:
-   - The example demonstrates how to create an array of `EquityAsset` objects, specify the number of trajectories and the maximum random increment, and then generate and print the trajectories.
+	1.		•	np.random.randint(0, K, (len(initial_prices), N)) generates a 2D array of random integers between 0 and  K . The shape of the array is  M \times N , where  M  is the number of equity assets (len(initial_prices)) and  N  is the number of price increments.
+	2.	Cumulative Sum to Simulate Price Paths:
 
-### Usage Example
+trajectories = np.cumsum(increments, axis=1)
 
-```python
+	2.		•	np.cumsum(increments, axis=1) computes the cumulative sum along each row, simulating the price path for each asset over  N  time steps.
+	3.	Adding Initial Prices:
+
+trajectories += initial_prices[:, np.newaxis]
+
+	3.		•	initial_prices[:, np.newaxis] reshapes initial_prices to a column vector, which is then broadcast and added to each row of trajectories. This ensures that each trajectory starts from the respective initial price.
+	4.	Parallel Processing:
+	•	The initial prices are split into chunks for parallel processing.
+	•	multiprocessing.Pool is used to parallelize the computation of trajectories.
+	•	pool.starmap applies the vectorized function to each chunk of initial prices along with  N  and  K .
+	•	The results from all processes are concatenated along the rows to form the final array of trajectories.
+
+Usage Example
+
 # Create an array of EquityAsset objects
 eqAssetsArray = np.array([EquityAsset("Asset1", 100), EquityAsset("Asset2", 150), EquityAsset("Asset3", 200)])
 
-# Number of trajectories to generate for each EquityAsset
+# Number of price increments to generate for each EquityAsset
 N = 10
 
 # Maximum random increment
@@ -92,8 +100,6 @@ all_trajectories = generate_all_trajectories(eqAssetsArray, N, K)
 # Print the results
 for i, eqAsset in enumerate(eqAssetsArray):
     print(f"Trajectories for {eqAsset.name}:")
-    for j in range(N):
-        print(all_trajectories[j, i])
-```
+    print(all_trajectories[i])
 
-This approach uses vectorization to efficiently generate random increments and cumulative sums, and it leverages multiprocessing to parallelize the computation, providing a significant performance improvement over nested loops.
+This revised code correctly generates a 2D array where each row corresponds to a different equity asset and each column represents a price increment. The first coordinate represents the index of the equity asset, and the second coordinate represents the index of the price increment.
