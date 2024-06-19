@@ -1,6 +1,6 @@
-Certainly! To generate multiple trajectories efficiently, we should modify `generate_all_trajectories` so that it calls `single_asset_trajectory_vectorized` in parallel, dividing the `Y` calls into parallel units of computation. We'll use the `multiprocessing` module to achieve this.
+I see, the goal is to split the generation of the trajectories (`Y`) across multiple cores, while keeping the computation for each asset intact. Each core should generate a portion of the total trajectories.
 
-Here's the revised code:
+Here's the revised approach:
 
 ### Revised Code
 
@@ -18,34 +18,33 @@ class EquityAsset:
         return f"EquityAsset({self.name}, {self.initial_price})"
 
 # Vectorized single_asset_trajectory function with random integer increments
-def single_asset_trajectory_vectorized(initial_prices, N, K):
+def single_asset_trajectory_vectorized(initial_prices, N, K, num_trajectories):
     # Generate random integer increments for all initial prices
-    increments = np.random.randint(0, K, (len(initial_prices), N))
-    trajectories = np.cumsum(increments, axis=1)  # Cumulative sum to simulate price paths
-    trajectories += initial_prices[:, np.newaxis]  # Add initial prices to each trajectory
+    increments = np.random.randint(0, K, (num_trajectories, len(initial_prices), N))
+    trajectories = np.cumsum(increments, axis=2)  # Cumulative sum to simulate price paths
+    trajectories += initial_prices[:, np.newaxis, np.newaxis]  # Add initial prices to each trajectory
     return trajectories
 
-# Helper function to generate multiple trajectories in parallel
-def generate_trajectories_parallel(initial_prices, N, K, chunk_size):
-    num_assets = len(initial_prices)
-    num_chunks = (num_assets + chunk_size - 1) // chunk_size  # Calculate the number of chunks
-    chunks = np.array_split(initial_prices, num_chunks)  # Split into chunks
-
-    with mp.Pool(mp.cpu_count()) as pool:
-        results = pool.starmap(single_asset_trajectory_vectorized, [(chunk, N, K) for chunk in chunks])
-    
-    # Concatenate results from all processes
-    return np.concatenate(results, axis=0)
-
-# Function to generate Y trajectories for each EquityAsset object
-def generate_all_trajectories(eqAssetsArray, N, K, Y, chunk_size=100):
+# Function to generate multiple trajectories in parallel
+def generate_all_trajectories(eqAssetsArray, N, K, Y):
     initial_prices = np.array([eqAsset.initial_price for eqAsset in eqAssetsArray])
     
-    # Generate Y trajectories for each asset in parallel
-    all_trajectories = np.empty((Y, len(eqAssetsArray), N))
+    # Determine number of cores
+    num_cores = mp.cpu_count()
     
-    for i in range(Y):
-        all_trajectories[i] = generate_trajectories_parallel(initial_prices, N, K, chunk_size)
+    # Determine number of trajectories per core
+    trajectories_per_core = Y // num_cores
+    
+    # Function to generate trajectories for a chunk of Y
+    def generate_chunk(chunk_size):
+        return single_asset_trajectory_vectorized(initial_prices, N, K, chunk_size)
+    
+    # Use multiprocessing to generate trajectories in parallel
+    with mp.Pool(num_cores) as pool:
+        results = pool.map(generate_chunk, [trajectories_per_core] * num_cores)
+    
+    # Concatenate results from all processes
+    all_trajectories = np.concatenate(results, axis=0)
     
     return all_trajectories
 
@@ -73,17 +72,17 @@ if __name__ == "__main__":
 ### Explanation
 
 1. **Vectorized `single_asset_trajectory_vectorized` Function**:
-   - Generates random integer increments for the given initial prices, computes cumulative sums to simulate price paths, and adds the initial prices to each trajectory.
+   - Generates random integer increments for the given initial prices and computes cumulative sums to simulate price paths. It adds the initial prices to each trajectory.
+   - The additional parameter `num_trajectories` specifies how many trajectories to generate in each call.
 
-2. **Helper Function `generate_trajectories_parallel`**:
-   - Splits the initial prices into chunks of a specified size (`chunk_size`).
-   - Uses `multiprocessing.Pool` to parallelize the generation of trajectories by applying `single_asset_trajectory_vectorized` to each chunk.
-   - Concatenates the results from all processes into a single array.
+2. **Function to Generate Trajectories in Parallel**:
+   - `generate_all_trajectories` splits the total number of trajectories (`Y`) across multiple cores (`num_cores`).
+   - Each core generates `trajectories_per_core` trajectories.
 
-3. **Main Function `generate_all_trajectories`**:
-   - Initializes an empty array to store all trajectories.
-   - For each trajectory (total `Y` trajectories), calls `generate_trajectories_parallel` to generate the trajectories in parallel.
-   - Returns the final array of all trajectories.
+3. **Multiprocessing Pool**:
+   - The `generate_chunk` function is defined to generate a chunk of trajectories.
+   - `pool.map` is used to parallelize the generation of these chunks across the available cores.
+   - The results from all processes are concatenated along the trajectory axis to form the final array of trajectories.
 
 ### Usage Example
 
@@ -107,4 +106,4 @@ all_trajectories = generate_all_trajectories(eqAssetsArray, N, K, Y)
 print(all_trajectories.shape)  # Should be (Y, M, N)
 ```
 
-This approach splits the computation of trajectories into manageable chunks that are processed in parallel, improving performance and handling large numbers of trajectories efficiently. The chunk size can be adjusted to balance the workload and optimize performance.
+This approach ensures that the computation of trajectories is distributed across the available cores, with each core generating an equal portion of the total trajectories. This improves performance by leveraging parallel processing while keeping the structure of each trajectory generation intact.
