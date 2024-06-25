@@ -38,58 +38,71 @@ def retrieve_columns(dataBasePath, tableName, columnNames):
 
 ### 2. `update_columns`
 
-This function updates or inserts columns in the given table of the SQLite database using the provided pandas DataFrame.
+To ensure that the update_columns function can handle both updating existing columns and inserting new columns if they do not exist, we need to do the following:
 
-```python
+	1.	Check which columns already exist in the database.
+	2.	For existing columns, update their values.
+	3.	For non-existing columns, add them to the table and then insert their values.
+
+Here’s the modified update_columns function:
+
+import sqlite3
+import pandas as pd
+
 def update_columns(dataBasePath, tableName, inputDataFrame):
     # Create a connection to the database
     conn = sqlite3.connect(dataBasePath)
-    
-    # Create a cursor object
     cursor = conn.cursor()
     
-    # Get the columns and values from the DataFrame
-    columns = inputDataFrame.columns
-    values = inputDataFrame.values.tolist()
+    # Get the list of existing columns in the table
+    cursor.execute(f"PRAGMA table_info({tableName})")
+    existing_columns = [row[1] for row in cursor.fetchall()]
     
-    # Construct the SQL query for updating/inserting
-    update_query = f"""
-    INSERT INTO {tableName} ({', '.join(columns)})
-    VALUES ({', '.join(['?' for _ in columns])})
-    ON CONFLICT(column_name) DO UPDATE SET
-    {', '.join([f"{col}=excluded.{col}" for col in columns])}
-    """
-    
-    # Execute the query for each row in the DataFrame
-    for value_tuple in values:
-        cursor.execute(update_query, value_tuple)
+    # Iterate over the columns in the DataFrame
+    for col in inputDataFrame.columns:
+        if col in existing_columns:
+            # Update existing column
+            for idx, value in enumerate(inputDataFrame[col]):
+                cursor.execute(f"""
+                    UPDATE {tableName}
+                    SET {col} = ?
+                    WHERE rowid = ?
+                """, (value, idx + 1))
+        else:
+            # Add new column to the table
+            cursor.execute(f"ALTER TABLE {tableName} ADD COLUMN {col}")
+            
+            # Insert values into the new column
+            for idx, value in enumerate(inputDataFrame[col]):
+                cursor.execute(f"""
+                    UPDATE {tableName}
+                    SET {col} = ?
+                    WHERE rowid = ?
+                """, (value, idx + 1))
     
     # Commit the transaction
     conn.commit()
     
     # Close the connection
     conn.close()
-```
 
-### Explanation
+Explanation:
 
-1. **`retrieve_columns` Function:**
-    - Establishes a connection to the SQLite database.
-    - Constructs an SQL query to select the specified columns from the specified table.
-    - Executes the query and loads the result into a pandas DataFrame.
-    - Closes the database connection.
-    - Returns the DataFrame.
+	1.	Check Existing Columns:
+	•	Use the PRAGMA table_info command to get metadata about the columns in the specified table.
+	•	Extract the column names from the metadata.
+	2.	Iterate Over DataFrame Columns:
+	•	For each column in the inputDataFrame, check if it exists in the table.
+	•	If the column exists, update its values.
+	•	Iterate over the rows in the DataFrame and update the corresponding rows in the table using the rowid as the key.
+	•	If the column does not exist, add it to the table using the ALTER TABLE command and then insert its values.
+	3.	Update Rows:
+	•	Use the UPDATE statement to set the column values in the table for each row. We assume rowid as a unique identifier to locate the rows.
+	4.	Commit and Close:
+	•	Commit the transaction to save the changes in the database.
+	•	Close the connection to the SQLite database.
 
-2. **`update_columns` Function:**
-    - Establishes a connection to the SQLite database.
-    - Extracts column names and values from the input DataFrame.
-    - Constructs an SQL query to insert or update rows in the specified table.
-    - Executes the query for each row in the DataFrame.
-    - Commits the transaction to the database.
-    - Closes the database connection.
+Note:
 
-### Note:
-- The `ON CONFLICT` clause in the `update_columns` function assumes there's a unique constraint or primary key named `column_name` in the table that would trigger the conflict. You should replace `column_name` with the actual column name that serves as a unique identifier in your table.
-- Make sure you have the `pandas` library installed. You can install it using `pip install pandas`.
-
-If you have specific requirements or constraints on how to handle conflicts or other conditions, please provide more details so the functions can be adjusted accordingly.
+	•	The rowid is used as a unique identifier to locate rows. This assumes that the rows in the DataFrame correspond directly to the rows in the database table. If the table has a different unique identifier, you’ll need to adjust the UPDATE statement accordingly.
+	•	The function assumes that the DataFrame has the same number of rows as the table. If this assumption does not hold, additional logic would be needed to correctly match rows between the DataFrame and the table.
