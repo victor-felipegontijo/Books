@@ -1,0 +1,84 @@
+Sure! Below are the two Python functions you requested, using the `sqlite3` library and the `pandas` library.
+
+### 1. `retrieve_columns`
+
+This function retrieves specified columns from a given table in the SQLite database and returns the result as a pandas DataFrame.
+
+```python
+import sqlite3
+import pandas as pd
+
+def retrieve_columns(dataBasePath, tableName, columnNames):
+    # Create a connection to the database
+    conn = sqlite3.connect(dataBasePath)
+    
+    # Construct the SQL query
+    columns = ', '.join(columnNames)
+    query = f"SELECT {columns} FROM {tableName}"
+    
+    # Execute the query and fetch the result into a pandas DataFrame
+    df = pd.read_sql_query(query, conn)
+    
+    # Close the connection
+    conn.close()
+    
+    return df
+```
+
+### 2. `update_columns`
+
+This function updates or inserts columns in the given table of the SQLite database using the provided pandas DataFrame.
+
+```python
+def update_columns(dataBasePath, tableName, inputDataFrame):
+    # Create a connection to the database
+    conn = sqlite3.connect(dataBasePath)
+    
+    # Create a cursor object
+    cursor = conn.cursor()
+    
+    # Get the columns and values from the DataFrame
+    columns = inputDataFrame.columns
+    values = inputDataFrame.values.tolist()
+    
+    # Construct the SQL query for updating/inserting
+    update_query = f"""
+    INSERT INTO {tableName} ({', '.join(columns)})
+    VALUES ({', '.join(['?' for _ in columns])})
+    ON CONFLICT(column_name) DO UPDATE SET
+    {', '.join([f"{col}=excluded.{col}" for col in columns])}
+    """
+    
+    # Execute the query for each row in the DataFrame
+    for value_tuple in values:
+        cursor.execute(update_query, value_tuple)
+    
+    # Commit the transaction
+    conn.commit()
+    
+    # Close the connection
+    conn.close()
+```
+
+### Explanation
+
+1. **`retrieve_columns` Function:**
+    - Establishes a connection to the SQLite database.
+    - Constructs an SQL query to select the specified columns from the specified table.
+    - Executes the query and loads the result into a pandas DataFrame.
+    - Closes the database connection.
+    - Returns the DataFrame.
+
+2. **`update_columns` Function:**
+    - Establishes a connection to the SQLite database.
+    - Extracts column names and values from the input DataFrame.
+    - Constructs an SQL query to insert or update rows in the specified table.
+    - Executes the query for each row in the DataFrame.
+    - Commits the transaction to the database.
+    - Closes the database connection.
+
+### Note:
+- The `ON CONFLICT` clause in the `update_columns` function assumes there's a unique constraint or primary key named `column_name` in the table that would trigger the conflict. You should replace `column_name` with the actual column name that serves as a unique identifier in your table.
+- Make sure you have the `pandas` library installed. You can install it using `pip install pandas`.
+
+If you have specific requirements or constraints on how to handle conflicts or other conditions, please provide more details so the functions can be adjusted accordingly.
