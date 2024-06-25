@@ -12,8 +12,20 @@ def retrieve_columns(dataBasePath, tableName, columnNames):
     # Create a connection to the database
     conn = sqlite3.connect(dataBasePath)
     
+    # Get the list of existing columns in the table
+    cursor = conn.execute(f"PRAGMA table_info({tableName})")
+    existing_columns = [row[1] for row in cursor.fetchall()]
+    
+    # Filter the columns to only include those that exist in the table
+    valid_columns = [col for col in columnNames if col in existing_columns]
+    
+    # If no valid columns found, return an empty DataFrame
+    if not valid_columns:
+        conn.close()
+        return pd.DataFrame()
+    
     # Construct the SQL query
-    columns = ', '.join(columnNames)
+    columns = ', '.join(valid_columns)
     query = f"SELECT {columns} FROM {tableName}"
     
     # Execute the query and fetch the result into a pandas DataFrame
@@ -23,7 +35,6 @@ def retrieve_columns(dataBasePath, tableName, columnNames):
     conn.close()
     
     return df
-```
 
 ### 2. `update_columns`
 
