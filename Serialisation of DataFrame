@@ -1,24 +1,29 @@
 import pandas as pd
 
 # Load the two CSV files into DataFrames
-df1 = pd.read_csv('file1.csv')  # Replace 'file1.csv' with your actual file path
-df2 = pd.read_csv('file2.csv')  # Replace 'file2.csv' with your actual file path
+df1 = pd.read_csv('file1.csv')  # Replace with your file path
+df2 = pd.read_csv('file2.csv')  # Replace with your file path
 
-# Ensure the two DataFrames have the same structure
+# Ensure the two DataFrames have the same columns
 assert df1.columns.equals(df2.columns), "The CSV files must have the same columns."
 
-# Define the filter criteria
-# Example: Here you would replace 'column_name' and 'condition' with your actual filter criteria
-# Example filter: rows where 'column_name' is greater than 10
-filtered_rows = (df1['column_name'] > 10)  # Adjust this line based on your filters
-filtered_rows = (df1['column1'] > 10) & (df1['column2'] == 'some_value')
+# Define the key column(s) to identify common rows
+# Replace 'key_column' with the actual name(s) of the key column(s) in your data
+key_columns = ['key_column']  # Adjust this list with the correct key column(s)
 
-# Apply the filter to both DataFrames
-filtered_df1 = df1[filtered_rows]
-filtered_df2 = df2[filtered_rows]
+# Find the intersection of the two DataFrames based on the key columns
+common_keys = pd.merge(df1[key_columns], df2[key_columns], on=key_columns)
 
-# Calculate the difference between the two DataFrames
-difference_df = filtered_df1.reset_index(drop=True) - filtered_df2.reset_index(drop=True)
+# Filter both DataFrames to keep only the rows with the common keys
+filtered_df1 = pd.merge(df1, common_keys, on=key_columns)
+filtered_df2 = pd.merge(df2, common_keys, on=key_columns)
+
+# Reset the index to align rows for direct comparison
+filtered_df1 = filtered_df1.sort_values(by=key_columns).reset_index(drop=True)
+filtered_df2 = filtered_df2.sort_values(by=key_columns).reset_index(drop=True)
+
+# Calculate the difference between the two filtered DataFrames
+difference_df = filtered_df1.set_index(key_columns) - filtered_df2.set_index(key_columns)
 
 # Display the resulting DataFrame with the differences
 print(difference_df)
