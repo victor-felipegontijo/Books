@@ -44,8 +44,21 @@ def check_cauchy_riemann(X, Y, cf_values, dx, dy):
     
     return cr1, cr2
 
-# Visualization of the results using 3D plots
-def plot_results_3d(X, Y, cf_values, cr1, cr2):
+# Function to check if CF is holomorphic inside the circle
+def is_holomorphic_inside_circle(X, Y, cr1, cr2, radius):
+    # Check whether points inside the circle (defined by radius) satisfy the Cauchy-Riemann conditions
+    inside_circle = (X**2 + Y**2 <= radius**2)
+    
+    cr1_inside = cr1[inside_circle]
+    cr2_inside = cr2[inside_circle]
+    
+    # If the Cauchy-Riemann conditions hold well inside the circle, return True
+    holomorphic = np.all(np.abs(cr1_inside) < 1e-5) and np.all(np.abs(cr2_inside) < 1e-5)
+    
+    return holomorphic
+
+# Plotting function for the 3D surface and Cauchy-Riemann conditions
+def plot_results_3d(X, Y, cf_values, cr1, cr2, radius):
     fig = plt.figure(figsize=(18, 8))
     
     # Create a 3D axis for plotting
@@ -75,7 +88,30 @@ def plot_results_3d(X, Y, cf_values, cr1, cr2):
     ax3.set_ylabel("Im(z)")
     ax3.set_zlabel("Deviation")
     
+    # Draw a circle around the origin
+    theta = np.linspace(0, 2 * np.pi, 100)
+    circle_x = radius * np.cos(theta)
+    circle_y = radius * np.sin(theta)
+    ax1.plot(circle_x, circle_y, color='red', linewidth=2)
+    ax2.plot(circle_x, circle_y, color='red', linewidth=2)
+    ax3.plot(circle_x, circle_y, color='red', linewidth=2)
+    
     plt.tight_layout()
+    plt.show()
+
+# Plot CF along the imaginary axis (Re(z) = 0)
+def plot_cf_imaginary_axis(observations, y_range, num_points):
+    y = np.linspace(y_range[0], y_range[1], num_points)
+    cf_values = np.vectorize(lambda y: empirical_cf(observations, 1j * y))(y)
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(y, np.real(cf_values), label="Re(CF)")
+    plt.plot(y, np.imag(cf_values), label="Im(CF)")
+    plt.title("Characteristic Function along the Imaginary Axis")
+    plt.xlabel("Imaginary part of z")
+    plt.ylabel("Value of CF")
+    plt.legend()
+    plt.grid(True)
     plt.show()
 
 # Main function to run the simulation and analysis
@@ -83,11 +119,12 @@ def main():
     # Parameters
     N = 1000  # Number of observations
     distribution = "uniform"  # Options: "uniform", "normal", "exponential"
-    x_range = [-5, 5]  # Real part of z
-    y_range = [-5, 5]  # Imaginary part of z
-    num_points = 100  # Number of grid points along each axis
+    x_range = [-1, 1]  # Real part of z (small square range)
+    y_range = [-1, 1]  # Imaginary part of z (small square range)
+    num_points = 50  # Number of grid points along each axis
     dx = (x_range[1] - x_range[0]) / num_points  # Grid spacing in x
     dy = (y_range[1] - y_range[0]) / num_points  # Grid spacing in y
+    radius = 0.5  # Radius of the circle (smaller than the grid size)
     
     # Simulate observations
     observations = simulate_observations(distribution, N)
@@ -98,8 +135,15 @@ def main():
     # Check Cauchy-Riemann conditions
     cr1, cr2 = check_cauchy_riemann(X, Y, cf_values, dx, dy)
     
+    # Check if CF is holomorphic inside the circle
+    holomorphic = is_holomorphic_inside_circle(X, Y, cr1, cr2, radius)
+    print(f"Is the CF holomorphic inside the circle? {'Yes' if holomorphic else 'No'}")
+    
     # Plot results using 3D surfaces
-    plot_results_3d(X, Y, cf_values, cr1, cr2)
+    plot_results_3d(X, Y, cf_values, cr1, cr2, radius)
+    
+    # Plot CF along the imaginary axis
+    plot_cf_imaginary_axis(observations, y_range, num_points)
 
 # Run the main function
 if __name__ == "__main__":
