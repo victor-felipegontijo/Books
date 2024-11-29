@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # Required for 3D plotting
 from scipy.stats import uniform, norm, expon
 
 # Function to simulate observations from different distributions
@@ -43,33 +44,36 @@ def check_cauchy_riemann(X, Y, cf_values, dx, dy):
     
     return cr1, cr2
 
-# Visualization of the results
-def plot_results(X, Y, cf_values, cr1, cr2):
-    plt.figure(figsize=(16, 8))
+# Visualization of the results using 3D plots
+def plot_results_3d(X, Y, cf_values, cr1, cr2):
+    fig = plt.figure(figsize=(18, 8))
     
-    # Plot the magnitude of the characteristic function
-    plt.subplot(1, 3, 1)
-    plt.contourf(X, Y, np.abs(cf_values), levels=50, cmap="viridis")
-    plt.colorbar()
-    plt.title("Magnitude of CF")
-    plt.xlabel("Re(z)")
-    plt.ylabel("Im(z)")
+    # Create a 3D axis for plotting
+    ax1 = fig.add_subplot(131, projection='3d')
+    surf1 = ax1.plot_surface(X, Y, np.abs(cf_values), cmap="viridis", edgecolor='none')
+    fig.colorbar(surf1, ax=ax1, shrink=0.5, aspect=5)
+    ax1.set_title("Magnitude of CF")
+    ax1.set_xlabel("Re(z)")
+    ax1.set_ylabel("Im(z)")
+    ax1.set_zlabel("Magnitude")
     
     # Plot the first Cauchy-Riemann condition (should be ~0)
-    plt.subplot(1, 3, 2)
-    plt.contourf(X, Y, np.abs(cr1), levels=50, cmap="plasma")
-    plt.colorbar()
-    plt.title("|CR1|: $\\partial_x$Re(CF) - $\\partial_y$Im(CF)")
-    plt.xlabel("Re(z)")
-    plt.ylabel("Im(z)")
+    ax2 = fig.add_subplot(132, projection='3d')
+    surf2 = ax2.plot_surface(X, Y, np.abs(cr1), cmap="plasma", edgecolor='none')
+    fig.colorbar(surf2, ax=ax2, shrink=0.5, aspect=5)
+    ax2.set_title("|CR1|: $\\partial_x$Re(CF) - $\\partial_y$Im(CF)")
+    ax2.set_xlabel("Re(z)")
+    ax2.set_ylabel("Im(z)")
+    ax2.set_zlabel("Deviation")
     
     # Plot the second Cauchy-Riemann condition (should be ~0)
-    plt.subplot(1, 3, 3)
-    plt.contourf(X, Y, np.abs(cr2), levels=50, cmap="plasma")
-    plt.colorbar()
-    plt.title("|CR2|: $\\partial_y$Re(CF) + $\\partial_x$Im(CF)")
-    plt.xlabel("Re(z)")
-    plt.ylabel("Im(z)")
+    ax3 = fig.add_subplot(133, projection='3d')
+    surf3 = ax3.plot_surface(X, Y, np.abs(cr2), cmap="plasma", edgecolor='none')
+    fig.colorbar(surf3, ax=ax3, shrink=0.5, aspect=5)
+    ax3.set_title("|CR2|: $\\partial_y$Re(CF) + $\\partial_x$Im(CF)")
+    ax3.set_xlabel("Re(z)")
+    ax3.set_ylabel("Im(z)")
+    ax3.set_zlabel("Deviation")
     
     plt.tight_layout()
     plt.show()
@@ -94,8 +98,8 @@ def main():
     # Check Cauchy-Riemann conditions
     cr1, cr2 = check_cauchy_riemann(X, Y, cf_values, dx, dy)
     
-    # Plot results
-    plot_results(X, Y, cf_values, cr1, cr2)
+    # Plot results using 3D surfaces
+    plot_results_3d(X, Y, cf_values, cr1, cr2)
 
 # Run the main function
 if __name__ == "__main__":
