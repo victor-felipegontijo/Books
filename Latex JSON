@@ -38,3 +38,34 @@
     "mv build/main.pdf output/"
   ]
 }
+
+# Paths
+$mainFile = "main"              # Name of the main file without extension
+$buildDir = "build"             # Directory for temporary files
+$outputDir = "output"           # Directory for the final PDF
+
+# Ensure the directories exist
+if (-not (Test-Path $buildDir)) { New-Item -ItemType Directory -Path $buildDir }
+if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir }
+
+# Step 1: Run pdflatex (first pass)
+Write-Host "Running pdflatex (first pass)..."
+pdflatex -synctex=1 -interaction=nonstopmode -output-directory=$buildDir $mainFile.tex
+
+# Step 2: Run bibtex
+Write-Host "Running bibtex..."
+bibtex "$buildDir\$mainFile"
+
+# Step 3: Run pdflatex (second pass)
+Write-Host "Running pdflatex (second pass)..."
+pdflatex -synctex=1 -interaction=nonstopmode -output-directory=$buildDir $mainFile.tex
+
+# Step 4: Run pdflatex (third pass)
+Write-Host "Running pdflatex (third pass)..."
+pdflatex -synctex=1 -interaction=nonstopmode -output-directory=$buildDir $mainFile.tex
+
+# Step 5: Move final PDF to output directory
+Write-Host "Moving final PDF to output directory..."
+Move-Item -Force "$buildDir\$mainFile.pdf" "$outputDir\$mainFile.pdf"
+
+Write-Host "Build completed successfully!"
