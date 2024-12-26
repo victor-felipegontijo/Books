@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde
 
 def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
     """
-    Displays a histogram with dynamic bin widths and annotated quantiles.
+    Displays a histogram with dynamic bin widths, annotated quantiles, 
+    and additional markers for each occurrence.
 
     Args:
         Values (list or array): Empirical observations of a random variable.
@@ -15,17 +15,11 @@ def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
     Values = np.array(Values)
     QuantileLevels = np.array(QuantileLevels)
     QuantileValues = np.array(QuantileValues)
-    
-    # Compute kernel density estimation for adaptive binning
-    kde = gaussian_kde(Values)
-    density = kde(Values)
-    
-    # Define bins dynamically based on quantiles and data density
+
+    # Define bins dynamically based on sorted data
     sorted_values = np.sort(Values)
-    bin_edges = np.concatenate(([Values.min()], 
-                                sorted_values[::len(sorted_values)//30], 
-                                [Values.max()]))
-    
+    bin_edges = np.concatenate(([Values.min()], sorted_values[::len(sorted_values)//30], [Values.max()]))
+
     # Create histogram and normalize to show proportions
     hist, bin_edges = np.histogram(Values, bins=bin_edges)
     proportions = hist / len(Values)  # Normalize by total occurrences
@@ -35,29 +29,41 @@ def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
     plt.figure(figsize=(12, 6))
     plt.bar(bin_centers, proportions, width=np.diff(bin_edges), alpha=0.7,
             color="blue", edgecolor="black", align="center", label="Proportions")
-    
+
+    # Display proportions above each bar
+    for center, prop in zip(bin_centers, proportions):
+        plt.text(center, prop + 0.005, f"{prop:.2%}", color="blue", fontsize=9, ha="center")
+
+    # Add red marks (x) at the x-axis for each occurrence
+    plt.scatter(Values, np.zeros_like(Values), color="red", marker="x", label="Occurrences at X-axis", alpha=0.8)
+
     # Add quantile annotations
     height_increment = 0.05  # Increment for vertical placement
     current_height = max(proportions) * 0.9  # Start at 90% of max height
-    
+
     for i, (level, value) in enumerate(zip(QuantileLevels, QuantileValues)):
         # Plot vertical lines
         plt.axvline(value, color="red", linestyle="--", linewidth=2)
         # Annotate quantile level with increasing heights
         plt.text(value, current_height, f"{level:.1%}", color="red", fontsize=10, ha="center", va="bottom")
         current_height -= height_increment  # Avoid overlap
-    
-    # Add quantile values to x-axis
-    xticks = np.sort(np.unique(np.concatenate([plt.xticks()[0], QuantileValues])))
-    plt.xticks(xticks, rotation=45)
-    
+
+    # Add quantile values to a second x-axis level
+    ax = plt.gca()
+    ax2 = ax.secondary_xaxis(-0.15)  # Position secondary x-axis below the main one
+    ax2.set_xticks(QuantileValues)
+    ax2.set_xticklabels([f"{qv}" for qv in QuantileValues], color="red", fontsize=9)
+    ax2.spines["bottom"].set_color("red")
+    ax2.tick_params(axis="x", colors="red")
+    ax2.set_xlabel("Quantile Values", color="red", fontsize=10)
+
     # Add labels, legend, and grid
-    plt.title("Histogram with Dynamic Bins and Quantile Annotations", fontsize=16)
+    plt.title("Histogram with Dynamic Bins, Proportions, Quantiles, and Density Marks", fontsize=16)
     plt.xlabel("Value", fontsize=14)
     plt.ylabel("Proportion", fontsize=14)
     plt.legend(fontsize=12)
     plt.grid(alpha=0.3)
-    
+
     # Show plot
     plt.tight_layout()
     plt.show()
