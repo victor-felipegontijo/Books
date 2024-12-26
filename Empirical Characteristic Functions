@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
 
 def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
     """
-    Displays a histogram with dynamic bin widths, annotated quantiles, 
-    and additional markers for each occurrence.
+    Displays a histogram with dynamic bin widths based on KDE, annotated quantiles, 
+    density markers, and floating quantile labels below the x-axis.
 
     Args:
         Values (list or array): Empirical observations of a random variable.
@@ -16,11 +17,24 @@ def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
     QuantileLevels = np.array(QuantileLevels)
     QuantileValues = np.array(QuantileValues)
 
-    # Define bins dynamically based on sorted data
-    sorted_values = np.sort(Values)
-    bin_edges = np.concatenate(([Values.min()], sorted_values[::len(sorted_values)//30], [Values.max()]))
+    # Estimate the density using Gaussian KDE
+    kde = gaussian_kde(Values)
+    density = kde(Values)  # Get density estimates for each point
 
-    # Create histogram and normalize to show proportions
+    # Sort the values and density estimates together
+    sorted_indices = np.argsort(Values)
+    sorted_values = Values[sorted_indices]
+    sorted_density = density[sorted_indices]
+
+    # Define dynamic bins based on KDE density
+    density_thresholds = np.linspace(sorted_density.min(), sorted_density.max(), 20)
+    bin_edges = [sorted_values[0]]  # Start with the minimum value
+    for threshold in density_thresholds[1:]:
+        # Add an edge at the last point below the current density threshold
+        bin_edges.append(sorted_values[sorted_density <= threshold][-1])
+    bin_edges = np.unique(bin_edges)  # Ensure no duplicate edges
+
+    # Create histogram with dynamic bins
     hist, bin_edges = np.histogram(Values, bins=bin_edges)
     proportions = hist / len(Values)  # Normalize by total occurrences
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -48,21 +62,20 @@ def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
         plt.text(value, current_height, f"{level:.1%}", color="red", fontsize=10, ha="center", va="bottom")
         current_height -= height_increment  # Avoid overlap
 
-    # Add quantile values to a second x-axis level
-    ax = plt.gca()
-    ax2 = ax.secondary_xaxis(-0.15)  # Position secondary x-axis below the main one
-    ax2.set_xticks(QuantileValues)
-    ax2.set_xticklabels([f"{qv}" for qv in QuantileValues], color="red", fontsize=9)
-    ax2.spines["bottom"].set_color("red")
-    ax2.tick_params(axis="x", colors="red")
-    ax2.set_xlabel("Quantile Values", color="red", fontsize=10)
+    # Add floating quantile values below the x-axis
+    for quantile_value in QuantileValues:
+        plt.text(quantile_value, -0.02, f"{quantile_value}", color="red", fontsize=9,
+                 ha="center", va="top", rotation=45, transform=plt.gca().transData)
 
     # Add labels, legend, and grid
-    plt.title("Histogram with Dynamic Bins, Proportions, Quantiles, and Density Marks", fontsize=16)
+    plt.title("Histogram with KDE-Based Dynamic Bins, Proportions, and Quantiles", fontsize=16)
     plt.xlabel("Value", fontsize=14)
     plt.ylabel("Proportion", fontsize=14)
     plt.legend(fontsize=12)
     plt.grid(alpha=0.3)
+
+    # Adjust plot limits to make space for floating labels
+    plt.gca().set_ylim(bottom=-0.05)
 
     # Show plot
     plt.tight_layout()
