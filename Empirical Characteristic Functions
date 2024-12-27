@@ -1,11 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde
 
 def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
     """
-    Displays a histogram with dynamic bin widths based on KDE, annotated quantiles, 
-    density markers, and floating quantile labels below the x-axis.
+    Displays a histogram using the Freedman-Diaconis rule and an empirical CDF plot with quantile annotations.
 
     Args:
         Values (list or array): Empirical observations of a random variable.
@@ -17,66 +15,51 @@ def getValuesAnalytics(Values, QuantileLevels, QuantileValues):
     QuantileLevels = np.array(QuantileLevels)
     QuantileValues = np.array(QuantileValues)
 
-    # Estimate the density using Gaussian KDE
-    kde = gaussian_kde(Values)
-    density = kde(Values)  # Get density estimates for each point
+    # Calculate Freedman-Diaconis bin width
+    q25, q75 = np.percentile(Values, [25, 75])  # Compute Q1 (25th percentile) and Q3 (75th percentile)
+    iqr = q75 - q25  # Interquartile range
+    bin_width = 2 * iqr / np.cbrt(len(Values))  # Freedman-Diaconis rule
+    bin_width = max(bin_width, 1e-6)  # Avoid too-small bin widths
+    bins = np.arange(Values.min(), Values.max() + bin_width, bin_width)
 
-    # Sort the values and density estimates together
-    sorted_indices = np.argsort(Values)
-    sorted_values = Values[sorted_indices]
-    sorted_density = density[sorted_indices]
-
-    # Define dynamic bins based on KDE density
-    density_thresholds = np.linspace(sorted_density.min(), sorted_density.max(), 20)
-    bin_edges = [sorted_values[0]]  # Start with the minimum value
-    for threshold in density_thresholds[1:]:
-        # Add an edge at the last point below the current density threshold
-        bin_edges.append(sorted_values[sorted_density <= threshold][-1])
-    bin_edges = np.unique(bin_edges)  # Ensure no duplicate edges
-
-    # Create histogram with dynamic bins
-    hist, bin_edges = np.histogram(Values, bins=bin_edges)
-    proportions = hist / len(Values)  # Normalize by total occurrences
+    # Compute histogram
+    hist, bin_edges = np.histogram(Values, bins=bins, density=True)  # Density=True for PDF-like scaling
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-    # Plot the histogram
-    plt.figure(figsize=(12, 6))
-    plt.bar(bin_centers, proportions, width=np.diff(bin_edges), alpha=0.7,
-            color="blue", edgecolor="black", align="center", label="Proportions")
+    # Calculate the empirical CDF
+    sorted_values = np.sort(Values)
+    cdf = np.arange(1, len(sorted_values) + 1) / len(sorted_values)
 
-    # Display proportions above each bar
-    for center, prop in zip(bin_centers, proportions):
-        plt.text(center, prop + 0.005, f"{prop:.2%}", color="blue", fontsize=9, ha="center")
+    # Create the figure with two subplots
+    fig, axs = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
 
-    # Add red marks (x) at the x-axis for each occurrence
-    plt.scatter(Values, np.zeros_like(Values), color="red", marker="x", label="Occurrences at X-axis", alpha=0.8)
+    # Histogram plot (PDF approximation)
+    axs[0].bar(bin_centers, hist, width=bin_width, alpha=0.7, color="blue", edgecolor="black", align="center")
+    axs[0].set_title("Histogram (Freedman-Diaconis Rule)", fontsize=16)
+    axs[0].set_ylabel("Density", fontsize=14)
+    axs[0].grid(alpha=0.3)
 
-    # Add quantile annotations
-    height_increment = 0.05  # Increment for vertical placement
-    current_height = max(proportions) * 0.9  # Start at 90% of max height
+    # Add vertical lines for quantiles on the histogram
+    for level, value in zip(QuantileLevels, QuantileValues):
+        axs[0].axvline(value, color="red", linestyle="--", linewidth=2)
+        axs[0].text(value, max(hist) * 0.9, f"{level:.1%}", color="red", fontsize=10, ha="center", va="bottom")
 
-    for i, (level, value) in enumerate(zip(QuantileLevels, QuantileValues)):
-        # Plot vertical lines
-        plt.axvline(value, color="red", linestyle="--", linewidth=2)
-        # Annotate quantile level with increasing heights
-        plt.text(value, current_height, f"{level:.1%}", color="red", fontsize=10, ha="center", va="bottom")
-        current_height -= height_increment  # Avoid overlap
+    # Empirical CDF plot
+    axs[1].plot(sorted_values, cdf, color="blue", linewidth=2, label="Empirical CDF")
+    axs[1].scatter(sorted_values, np.zeros_like(sorted_values), color="red", marker="x", label="Occurrences at X-axis")
+    
+    # Add vertical lines for quantiles on the CDF
+    for level, value in zip(QuantileLevels, QuantileValues):
+        axs[1].axvline(value, color="red", linestyle="--", linewidth=2)
+        axs[1].text(value, level, f"{level:.1%}", color="red", fontsize=10, ha="center", va="bottom")
 
-    # Add floating quantile values below the x-axis
-    for quantile_value in QuantileValues:
-        plt.text(quantile_value, -0.02, f"{quantile_value}", color="red", fontsize=9,
-                 ha="center", va="top", rotation=45, transform=plt.gca().transData)
+    # Set titles and labels for the CDF
+    axs[1].set_title("Empirical Cumulative Distribution Function (CDF)", fontsize=16)
+    axs[1].set_xlabel("Value", fontsize=14)
+    axs[1].set_ylabel("CDF", fontsize=14)
+    axs[1].legend(fontsize=12)
+    axs[1].grid(alpha=0.3)
 
-    # Add labels, legend, and grid
-    plt.title("Histogram with KDE-Based Dynamic Bins, Proportions, and Quantiles", fontsize=16)
-    plt.xlabel("Value", fontsize=14)
-    plt.ylabel("Proportion", fontsize=14)
-    plt.legend(fontsize=12)
-    plt.grid(alpha=0.3)
-
-    # Adjust plot limits to make space for floating labels
-    plt.gca().set_ylim(bottom=-0.05)
-
-    # Show plot
+    # Adjust layout
     plt.tight_layout()
     plt.show()
