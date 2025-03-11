@@ -1,29 +1,101 @@
-import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import itertools
 
-# Load the two CSV files into DataFrames
-df1 = pd.read_csv('file1.csv')  # Replace with your file path
-df2 = pd.read_csv('file2.csv')  # Replace with your file path
+class Node:
+    def __init__(self, time, price, symbol):
+        self.time = time  # Time step
+        self.price = price  # Numerical price value
+        self.symbol = symbol  # Symbolic representation for display
 
-# Ensure the two DataFrames have the same columns
-assert df1.columns.equals(df2.columns), "The CSV files must have the same columns."
+def generate_market_trajectories(past_prices, n):
+    """
+    Generates all possible market trajectories based on past returns.
+    """
+    past_returns = np.array([past_prices[i+1] / past_prices[i] for i in range(n-1)])
 
-# Define the key column(s) to identify common rows
-# Replace 'key_column' with the actual name(s) of the key column(s) in your data
-key_columns = ['key_column']  # Adjust this list with the correct key column(s)
+    # Initialize the starting node at the present time (t=n-1)
+    start_price = past_prices[-1]
+    start_symbol = "S_t"
+    root = Node(n-1, start_price, start_symbol)
 
-# Find the intersection of the two DataFrames based on the key columns
-common_keys = pd.merge(df1[key_columns], df2[key_columns], on=key_columns)
+    # Generate paths for the past regime
+    past_nodes = [root]
+    for i in range(n-1, 0, -1):
+        prev_price = past_prices[i-1]
+        prev_symbol = f"S_t (R_{{{i}}})^{{-{n-i}}}"
+        past_nodes.append(Node(i-1, prev_price, prev_symbol))
+    
+    # Generate paths for the future regime
+    future_nodes = [[root]]
+    for k in range(n, 2*n):
+        new_nodes = []
+        parent_nodes = future_nodes[-1]
 
-# Filter both DataFrames to keep only the rows with the common keys
-filtered_df1 = pd.merge(df1, common_keys, on=key_columns)
-filtered_df2 = pd.merge(df2, common_keys, on=key_columns)
+        for parent in parent_nodes:
+            for i, R in enumerate(past_returns):
+                new_price = parent.price * R
+                new_symbol = f"{parent.symbol} \\cdot R_{{{i+1}}}"
+                new_nodes.append(Node(k, new_price, new_symbol))
 
-# Reset the index to align rows for direct comparison
-filtered_df1 = filtered_df1.sort_values(by=key_columns).reset_index(drop=True)
-filtered_df2 = filtered_df2.sort_values(by=key_columns).reset_index(drop=True)
+        # Remove duplicate nodes (same price) and store unique ones
+        unique_nodes = {node.price: node for node in new_nodes}.values()
+        future_nodes.append(list(unique_nodes))
 
-# Calculate the difference between the two filtered DataFrames
-difference_df = filtered_df1.set_index(key_columns) - filtered_df2.set_index(key_columns)
+    return past_nodes, future_nodes
 
-# Display the resulting DataFrame with the differences
-print(difference_df)
+def plot_market_trajectories_refined(past_nodes, future_nodes, n):
+    """
+    Plots the market trajectories with properly formatted symbolic labels.
+    Adjusts the vertical axis origin to align with the present date value and hides the vertical axis.
+    """
+    plt.figure(figsize=(10, 6))
+
+    # Find vertical origin (set S_t at y=0)
+    present_price = past_nodes[-1].price
+
+    # Draw past trajectories
+    for i in range(len(past_nodes) - 1):
+        plt.plot([past_nodes[i].time, past_nodes[i+1].time],
+                 [past_nodes[i].price - present_price, past_nodes[i+1].price - present_price], 
+                 'k-', lw=1)
+
+    # Draw future trajectories
+    for step in range(len(future_nodes) - 1):
+        for node in future_nodes[step]:
+            for next_node in future_nodes[step + 1]:
+                plt.plot([node.time, next_node.time],
+                         [node.price - present_price, next_node.price - present_price], 
+                         'gray', lw=1, alpha=0.6)
+
+    # Annotate nodes
+    all_nodes = past_nodes + list(itertools.chain(*future_nodes))
+    for node in all_nodes:
+        plt.text(node.time, node.price - present_price, f"${node.symbol}$", fontsize=9, 
+                 ha='center', va='center', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+
+    # Format time labels
+    time_steps = list(range(2 * n))
+    time_labels = [f"$t_{{{i}}}$" for i in time_steps]
+    plt.xticks(time_steps, time_labels)
+
+    plt.axvline(x=n-1, color='black', linestyle='--', label="Present Time")  # Indicate present time
+    plt.axhline(y=0, color='black', linestyle='-', linewidth=1)  # Set horizontal origin
+
+    plt.xlabel("Time Steps")
+    plt.ylabel("Price Deviation from Present")
+    plt.title("Market Path Tree with Symbolic Notation")
+
+    # Hide vertical axis
+    plt.gca().axes.get_yaxis().set_visible(False)
+
+    plt.legend()
+    plt.show()
+
+# Example case with n=3
+n = 3
+past_prices = [100, 105, 110, 108]  # Example past prices
+
+# Generate and plot refined market trajectories for n=3
+past_nodes, future_nodes = generate_market_trajectories(past_prices, n)
+plot_market_trajectories_refined(past_nodes, future_nodes, n)
