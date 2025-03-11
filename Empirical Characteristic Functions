@@ -43,6 +43,55 @@ def plot_market_trajectories_with_labels(trajectories, transition_probs):
     plt.legend()
     plt.show()
 
+def generate_market_trajectories(past_prices):
+    """
+    Generates all possible market trajectories based on past prices.
+    
+    Parameters:
+    past_prices - A list of past stock prices (length n+1).
+    
+    Returns:
+    A list of trajectories, each represented as a sequence of prices.
+    A dictionary of transition probabilities for future moves.
+    """
+    n = len(past_prices) - 1  # Number of past returns
+    PR = np.array(past_prices[1:]) / np.array(past_prices[:-1])  # Compute past returns
+
+    # The time-mesh: [0, ..., 2n]
+    time_steps = list(range(2 * n + 1))
+
+    # Start with a single trajectory in the past
+    past_trajectory = [(t, past_prices[t]) for t in range(n + 1)]
+    trajectories = [past_trajectory]  # Initialize with past regime trajectory
+
+    transition_probs = {}  # Dictionary to store probabilities of future transitions
+
+    # Generate all possible future paths
+    for t in range(n, 2 * n):
+        new_trajectories = []
+        for traj in trajectories:
+            last_price = traj[-1][1]
+            new_nodes = [(t + 1, last_price * r) for r in PR]
+
+            for node in new_nodes:
+                new_traj = traj + [node]
+                new_trajectories.append(new_traj)
+
+                # Store transition probability
+                transition_probs[(traj[-1], node)] = 1 / len(PR)
+
+        trajectories = new_trajectories  # Update with new paths
+
+    return trajectories, transition_probs
+
+
+# Example past price data for n=3
+past_prices_trajectories = [100, 110, 105]  # Example past prices
+
+# Generate and plot market trajectories
+market_trajectories, transition_probs = generate_market_trajectories(past_prices_trajectories)
+plot_market_trajectories(market_trajectories, transition_probs)
+
 
 # Generate and plot market trajectories with labeled time steps
 plot_market_trajectories_with_labels(market_trajectories, transition_probs)
