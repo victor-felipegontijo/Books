@@ -1,97 +1,141 @@
-def plot_market_trajectories_with_labels(trajectories, transition_probs):
-    """
-    Plots all possible market trajectories with labeled time indices instead of numerical values.
-    
-    Parameters:
-    trajectories - List of market paths from time 0 to 2n.
-    transition_probs - Dictionary with transition probabilities.
-    """
-    plt.figure(figsize=(12, 7))
-    
-    # Find the asset price at present time to set as vertical origin
-    present_price = trajectories[0][len(trajectories[0]) // 2][1]
-    
-    # Generate custom time labels
-    num_steps = len(trajectories[0])
-    time_labels = [f"t_{i}" for i in range(num_steps)]
-    time_indices = list(range(num_steps))
+\documentclass[a4paper,11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
 
-    # Draw each trajectory
-    for traj in trajectories:
-        times, prices = zip(*traj)
-        plt.plot(times, np.array(prices) - present_price, marker='o', linestyle='-', color='gray', alpha=0.6)
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
 
-        # Annotate nodes with price values
-        for t, p in traj:
-            plt.text(t, p - present_price, f"{p:.2f}", fontsize=9, ha='center', va='center', 
-                     bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+\begin{document}
 
-    # Annotate transition probabilities (only for future regime)
-    for (start, end), prob in transition_probs.items():
-        t_start, p_start = start
-        t_end, p_end = end
-        plt.text((t_start + t_end) / 2, (p_start + p_end) / 2 - present_price, f"{prob:.2f}", 
-                 fontsize=8, ha='center', color='blue')
+\section{Empirical moments and measure convergence}
 
-    plt.axvline(x=len(trajectories[0]) // 2, color='black', linestyle='--', label="Present Time")  # Indicate present time
-    plt.axhline(y=0, color='black', linestyle='-', linewidth=1)  # Set horizontal origin
+Let \(X_1,X_2,\dots\) be i.i.d.\ \(\R^d\)-valued random variables with law \(m\).  Denote the empirical distribution
+\[
+m_n \;=\;\frac1n\sum_{i=1}^n \delta_{X_i},
+\]
+and write \(\bar X_n = \frac1n\sum_{i=1}^n X_i\), 
+\[
+S_n \;=\;\frac1n\sum_{i=1}^n (X_i-\bar X_n)(X_i-\bar X_n)^{T}.
+\]
 
-    plt.xticks(time_indices, time_labels)  # Replace numerical time steps with labeled indices
-    plt.xlabel("Time Steps")
-    plt.ylabel("Price Deviation from Present")
-    plt.title("Possible Market Trajectories with Transition Probabilities")
-    plt.legend()
-    plt.show()
+\subsection*{A) Convergence of first and second moments}
 
-def generate_market_trajectories(past_prices):
-    """
-    Generates all possible market trajectories based on past prices.
-    
-    Parameters:
-    past_prices - A list of past stock prices (length n+1).
-    
-    Returns:
-    A list of trajectories, each represented as a sequence of prices.
-    A dictionary of transition probabilities for future moves.
-    """
-    n = len(past_prices) - 1  # Number of past returns
-    PR = np.array(past_prices[1:]) / np.array(past_prices[:-1])  # Compute past returns
+\begin{theorem}[Strong Law for moments]
+\label{thm:moment-lln}
+Assume 
+\[
+\mathbb{E}\bigl[\|X_1\|\bigr]<\infty,
+\qquad
+\mathbb{E}\bigl[\|X_1\|^2\bigr]<\infty.
+\]
+Then almost surely as \(n\to\infty\):
+\[
+\bar X_n \;\longrightarrow\;\mathbb{E}[X_1],
+\qquad
+S_n \;\longrightarrow\;\mathrm{Cov}(X_1)
+\;=\;\mathbb{E}\bigl[X_1X_1^T\bigr]
+-\mathbb{E}[X_1]\,\mathbb{E}[X_1]^T.
+\]
+\end{theorem}
 
-    # The time-mesh: [0, ..., 2n]
-    time_steps = list(range(2 * n + 1))
+\begin{proof}
+By the (vector) Strong Law of Large Numbers, each coordinate of 
+\(\bar X_n\) converges a.s.\ to the corresponding coordinate of \(\mathbb{E}[X_1]\), giving the first conclusion.  
 
-    # Start with a single trajectory in the past
-    past_trajectory = [(t, past_prices[t]) for t in range(n + 1)]
-    trajectories = [past_trajectory]  # Initialize with past regime trajectory
+Next, apply the SLLN to the matrix‐valued random variables \(X_iX_i^T\) to get
+\[
+\frac1n\sum_{i=1}^n X_iX_i^T
+\;\xrightarrow{\rm a.s.}\;
+\mathbb{E}[X_1X_1^T].
+\]
+Since
+\[
+S_n
+=
+\frac1n\sum_{i=1}^n X_iX_i^T
+\;-\;
+\bar X_n\,\bar X_n^T,
+\]
+and \(\bar X_n\bar X_n^T\to \mathbb{E}[X_1]\,\mathbb{E}[X_1]^T\) a.s., the result follows.
+\end{proof}
 
-    transition_probs = {}  # Dictionary to store probabilities of future transitions
+\subsection*{B) Convergence of empirical measures in \(W_2\)}
 
-    # Generate all possible future paths
-    for t in range(n, 2 * n):
-        new_trajectories = []
-        for traj in trajectories:
-            last_price = traj[-1][1]
-            new_nodes = [(t + 1, last_price * r) for r in PR]
+\begin{definition}[Wasserstein--2 distance]
+For \(\mu,\nu\in\mathcal P_2(\R^d)\) (probability measures with finite second moment) define
+\[
+W_2(\mu,\nu)
+\;=\;
+\inf_{\pi\in\Pi(\mu,\nu)}
+\Bigl(\int_{\R^d\times\R^d}\|x-y\|^2\,\pi(dx,dy)\Bigr)^{1/2},
+\]
+where \(\Pi(\mu,\nu)\) is the set of couplings of \(\mu,\nu\).
+\end{definition}
 
-            for node in new_nodes:
-                new_traj = traj + [node]
-                new_trajectories.append(new_traj)
+\begin{theorem}[Almost‐sure convergence in \(W_2\)]
+\label{thm:W2-lln}
+If \(\mathbb{E}\bigl[\|X_1\|^2\bigr]<\infty\), then almost surely
+\[
+W_2\bigl(m_n,\,m\bigr)
+\;\longrightarrow\;0
+\quad(n\to\infty).
+\]
+\end{theorem}
 
-                # Store transition probability
-                transition_probs[(traj[-1], node)] = 1 / len(PR)
+\begin{proof}[Sketch of proof]
+The strategy is a truncation + compactness argument:
 
-        trajectories = new_trajectories  # Update with new paths
+\begin{enumerate}
+  \item Fix \(R>0\) and let 
+  \(\mu^R\), \(\mu^R_n\) be the laws of \(X_1\mathbf{1}_{\{\|X_1\|\le R\}}\) and its empirical version.  On the compact ball \(\{\|x\|\le R\}\), one shows using Varadarajan’s theorem that
+  \(\mu^R_n\to\mu^R\) weakly and the second‐moment difference vanishes as \(n\to\infty\).  Hence \(W_2(\mu^R_n,\mu^R)\to0\).
 
-    return trajectories, transition_probs
+  \item Control the tail \(\{\|x\|>R\}\) using Markov’s inequality and the moment hypothesis:
+  \(\displaystyle m(\|X\|>R)\le \frac{\E[\|X\|^2]}{R^2}\), so for large \(R\) this mass is small, uniformly in \(n\).
 
+  \item Use the triangle inequality
+  \[
+    W_2(m_n,m)
+    \le 
+    W_2(m_n,\mu^R_n)
+    +W_2(\mu^R_n,\mu^R)
+    +W_2(\mu^R,m),
+  \]
+  and let first \(n\to\infty\), then \(R\to\infty\).  This shows \(W_2(m_n,m)\to0\).
+\end{enumerate}
+\end{proof}
 
-# Example past price data for n=3
-past_prices_trajectories = [100, 110, 105]  # Example past prices
+\begin{corollary}[Moment convergence under \(W_2\)]
+\label{cor:moments-from-W2}
+Assume \(\mathbb{E}\bigl[\|X_1\|^2\bigr]<\infty\).  Then, almost surely,
+\[
+W_2(m_n,m)\;\xrightarrow{n\to\infty}\;0
+\quad\Longrightarrow\quad
+\forall\,q\in[0,2),\quad
+\int_{\R^d}\|x\|^q\,m_n(dx)
+\;\xrightarrow{\rm a.s.}\;
+\int_{\R^d}\|x\|^q\,m(dx).
+\]
+\end{corollary}
 
-# Generate and plot market trajectories
-market_trajectories, transition_probs = generate_market_trajectories(past_prices_trajectories)
-plot_market_trajectories(market_trajectories, transition_probs)
+\begin{proof}
+The map
+\[
+\mu\;\longmapsto\;\int\|x\|^q\,\mu(dx)
+\]
+is continuous on \(\bigl(\mathcal P_2(\R^d),W_2\bigr)\) for every \(0\le q<2\).  Equivalently, given couplings \(\pi_n\in\Pi(m_n,m)\) with 
+\(\int\|x-y\|^2\,\pi_n(dx,dy)=W_2^2(m_n,m)\), one shows via the inequality
+\[
+\bigl|\|x\|^q-\|y\|^q\bigr|
+\;\le\;
+C_q\,\bigl(\|x\|^{q-1}+\|y\|^{q-1}\bigr)\,\|x-y\|
+\]
+and Hölder/Young that
+\(\bigl|\int\|x\|^q\,m_n-\int\|x\|^q\,m\bigr|\to0\).  Since \(W_2(m_n,m)\to0\) a.s., this yields the claimed almost‐sure convergence of all moments of order \(q<2\).
+\end{proof}
 
+\bigskip
+\noindent
+\textbf{Remark.}  Corollary \ref{cor:moments-from-W2} recovers Theorem \ref{thm:moment-lln} as the special case \(q=1,2\) and extends it to all intermediate orders \(q\in(0,2)\).
 
-# Generate and plot market trajectories with labeled time steps
-plot_market_trajectories_with_labels(market_trajectories, transition_probs)
+\end{document}
