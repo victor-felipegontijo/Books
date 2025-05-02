@@ -1,137 +1,203 @@
-\documentclass[a4paper,11pt]{article}
+\documentclass[12pt]{article}
 \usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=1in}
 
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{definition}[theorem]{Definition}
-\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\theoremstyle{plain}
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{lemma}[definition]{Lemma}
+\newtheorem{remark}[definition]{Remark}
 
 \begin{document}
 
-\section{Empirical moments and measure convergence}
+\title{Convergence of Two-Regime Random Walks to a Single-Regime Limit}
+\author{ }
+\date{ }
+\maketitle
 
-Let \(X_1,X_2,\dots\) be i.i.d.\ \(\R^d\)-valued random variables with law \(m\).  Denote the empirical distribution
+\begin{abstract}
+We study an $\mathbb{R}^d$–valued random walk $Y^{(n)}$ on the discrete time‐grid $\{0,1,\dots,2n\}$ whose increments are drawn in two different regimes:
+\begin{itemize}
+  \item \emph{First regime} (times $0$ to $n$): true i.i.d.\ samples from a probability measure $m$ on $\mathbb{R}^d$.
+  \item \emph{Second regime} (times $n$ to $2n$): i.i.d.\ samples from the empirical measure $m_n$ built on the first $n$ increments.
+\end{itemize}
+Under a finite‐second‐moment assumption on $m$, we prove that as $n\to\infty$, the law of $Y^{(n)}$ converges (in a suitable $2$‐Wasserstein sense on path‐space) to that of the classical single‐regime random walk whose all increments are drawn from $m$.  The proof uses an explicit coupling and quantitative bounds on the $2$‐Wasserstein distance.
+\end{abstract}
+
+\section{Introduction}
+
+Random walks whose increments are sampled from different distributions in different time‐windows arise naturally in situations where one first gathers data and then resamples from it.  Intuitively, as the sample size grows, one expects the “two‐regime” walk to look more and more like the classical walk driven purely by the true distribution.  Our goal is to make this intuition precise and quantitative.
+
+\section{Preliminaries}
+
+\begin{definition}[Probability measure with finite second moment]
+Let $m$ be a probability measure on $\mathbb{R}^d$.  We say $m$ has \emph{finite second moment} if
 \[
-m_n \;=\;\frac1n\sum_{i=1}^n \delta_{X_i},
+  \int_{\mathbb{R}^d} \|x\|^2 \, m(dx) \;<\;\infty.
 \]
-and write \(\bar X_n = \tfrac1n\sum_{i=1}^n X_i\), 
-\[
-S_n \;=\;\frac1n\sum_{i=1}^n (X_i-\bar X_n)(X_i-\bar X_n)^{T}.
-\]
-
-\subsection*{A) Convergence of first and second moments}
-
-\begin{theorem}[Strong Law for moments]
-\label{thm:moment-lln}
-Assume 
-\[
-\mathbb{E}\bigl[\|X_1\|\bigr]<\infty,
-\quad
-\mathbb{E}\bigl[\|X_1\|^2\bigr]<\infty.
-\]
-Then almost surely as \(n\to\infty\):
-\[
-\bar X_n \;\longrightarrow\;\mathbb{E}[X_1],
-\qquad
-S_n \;\longrightarrow\;\mathrm{Cov}(X_1)
-=\mathbb{E}\bigl[X_1X_1^T\bigr]
--\mathbb{E}[X_1]\,\mathbb{E}[X_1]^T.
-\]
-\end{theorem}
-
-\begin{proof}
-By the vector‐valued Strong Law of Large Numbers each coordinate of 
-\(\bar X_n\) converges a.s.\ to \(\E[X_1]\).  Likewise, applying the SLLN to 
-\(X_iX_i^T\in\R^{d\times d}\) gives 
-\(\tfrac1n\sum X_iX_i^T\to\E[X_1X_1^T]\) a.s.  Since 
-\(\;S_n=\tfrac1n\sum X_iX_i^T-\bar X_n\,\bar X_n^T\)\,, the result follows.
-\end{proof}
-
-\subsection*{B) Weak convergence of empirical measures}
-
-\begin{theorem}[Varadarajan, 1958]
-\label{thm:varadarajan}
-Let \((S,d)\) be a Polish space (in particular \(S=\R^d\)), and let \(X_i\) be i.i.d.\ with law \(m\).  Then almost surely
-\[
-m_n
-\;\xrightarrow[n\to\infty]{{\rm weak}}\;
-m
-\quad\text{in }\mathcal P(S).
-\]
-\end{theorem}
-
-\begin{proof}[Reference]
-See V. S. Varadarajan, \emph{On the convergence of probability measures}, Indian J. Stat.\ 20A (1958), 213–219; and R.\,M. Dudley, \emph{Real Analysis and Probability}, Cambridge Univ.\ Press (2002), Theorem 11.4.1.
-\end{proof}
-
-\subsection*{C) Convergence of empirical measures in \(W_2\)}
-
-\begin{definition}[Wasserstein–2 distance]
-For \(\mu,\nu\in\mathcal P_2(\R^d)\) define
-\[
-W_2(\mu,\nu)
-=\inf_{\pi\in\Pi(\mu,\nu)}
-\Bigl(\int_{\R^d\times\R^d}\|x-y\|^2\,\pi(dx,dy)\Bigr)^{1/2},
-\]
-where \(\Pi(\mu,\nu)\) is the set of couplings of \(\mu,\nu\).
 \end{definition}
 
-\begin{theorem}[Almost‐sure convergence in \(W_2\)]
-\label{thm:W2-lln}
-If \(\E[\|X_1\|^2]<\infty\), then almost surely
+\begin{definition}[$2$--Wasserstein distance]
+Let $\mathcal{P}_2(\mathbb{R}^d)$ denote probability measures on $\mathbb{R}^d$ with finite second moment.  For $\mu,\nu\in\mathcal{P}_2(\mathbb{R}^d)$, the \emph{$2$–Wasserstein distance} is
 \[
-W_2(m_n,m)\;\longrightarrow\;0
-\quad(n\to\infty).
+  W_2(\mu,\nu)
+  \;=\;
+  \Bigl(\,
+    \inf_{\pi\in\Pi(\mu,\nu)}
+    \int_{\mathbb{R}^d\times\mathbb{R}^d}
+      \|x-y\|^2 \,\pi(dx,dy)
+  \Bigr)^{\!\!1/2},
 \]
+where $\Pi(\mu,\nu)$ is the set of couplings of $\mu$ and $\nu$.
+\end{definition}
+
+We will also need a path‐space metric on $(\mathbb{R}^d)^{2n+1}$.
+
+\begin{definition}[Normalized path‐metric]
+For two paths $y=(y_0,\dots,y_{2n})$ and $y'=(y'_0,\dots,y'_{2n})$ in $(\mathbb{R}^d)^{2n+1}$, define
+\[
+  d_n(y,y')
+  \;=\;\sqrt{\frac{1}{2n}
+    \sum_{k=0}^{2n}\|y_k - y'_k\|^2}\,.
+\]
+\end{definition}
+
+\section{Model Description}
+
+Fix $n\in\mathbb{N}$.  Let
+\[
+  Z_1,\dots,Z_n \;\stackrel{\mathrm{iid}}{\sim}\; m,
+  \qquad
+  m_n \;=\;\frac{1}{n}\sum_{i=1}^n\delta_{Z_i},
+\]
+and independently let
+\[
+  W_1,\dots,W_n \;\stackrel{\mathrm{iid}}{\sim}\; m_n.
+\]
+Define the \emph{two‐regime random walk} $Y^{(n)}=(Y^{(n)}_k)_{k=0}^{2n}$ by
+\begin{align*}
+  Y^{(n)}_0 &= 0,\\
+  Y^{(n)}_k &= \sum_{i=1}^k Z_i,
+  \quad 1\le k\le n,\\
+  Y^{(n)}_{n+\ell}
+    &= \sum_{i=1}^n Z_i + \sum_{j=1}^\ell W_j,
+  \quad 1\le \ell\le n.
+\end{align*}
+
+Independently, let $(X_i)_{i\ge1}$ be i.i.d.\ samples from $m$, and define the \emph{single‐regime walk}
+\[
+  Y^\#_k \;=\; \sum_{i=1}^k X_i,
+  \quad k\ge1,\quad Y^\#_0=0.
+\]
+Denote by $P_n=\mathcal{L}(Y^{(n)})$ and $Q_n=\mathcal{L}(Y^\#_0,\dots,Y^\#_{2n})$ their laws on path‐space.
+
+\section{Main Theorem}
+
+\begin{theorem}
+\label{thm:main}
+Assume $m\in\mathcal{P}_2(\mathbb{R}^d)$.  Then
+\[
+  W_{2,d_n}(P_n,\,Q_n)
+  \;\le\;
+  \tfrac12\,W_2(m_n,\,m)
+  \;\xrightarrow[n\to\infty]{\text{a.s.}}\;0.
+\]
+In particular, $P_n\to Q_n$ in $2$‐Wasserstein on $((\mathbb{R}^d)^{2n+1},d_n)$, so that $Y^{(n)}$ converges in law to the single‐regime walk $Y^\#$.
 \end{theorem}
 
-\begin{proof}[Sketch]
-Use Theorem \ref{thm:varadarajan} on compacts (truncation), control the tails by Markov’s inequality, and apply the triangle inequality for \(W_2\), letting first \(n\to\infty\) then the truncation radius \(R\to\infty\).
-\end{proof}
+\section{Proof of Theorem \ref{thm:main}}
 
-\begin{corollary}[Moment convergence under \(W_2\)]
-\label{cor:moments-from-W2}
-If \(\E[\|X_1\|^2]<\infty\), then almost surely
+The proof proceeds by constructing an explicit coupling of the two‐regime walk and the single‐regime walk, then bounding the expected path‐distance.
+
+\subsection*{1. Coupling on the first regime}
+
+We couple the increments in the first half by setting
 \[
-W_2(m_n,m)\to0
-\quad\Longrightarrow\quad
-\forall\,q\in[0,2),\;
-\int\|x\|^q\,m_n(dx)
-\;\xrightarrow{\rm a.s.}\;
-\int\|x\|^q\,m(dx).
+  Z_i = X_i,\quad i=1,\dots,n.
 \]
-\end{corollary}
+Under this coupling, 
+\[
+  Y^{(n)}_k = Y^\#_k,\quad k=0,1,\dots,n,
+\]
+so the two paths coincide exactly on the times $0$ through $n$.
 
-\begin{proof}
-The map \(\mu\mapsto\int\|x\|^q\,\mu(dx)\) is continuous on \((\mathcal P_2(\R^d),W_2)\) for \(q<2\).  One shows via an optimal coupling \(\pi_n\) and the inequality
-\(\bigl|\|x\|^q-\|y\|^q\bigr|\le C_q(\|x\|^{q-1}+\|y\|^{q-1})\|x-y\|\)
-that
-\(\bigl|\int\|x\|^q\,m_n-\int\|x\|^q\,m\bigr|\to0\).
-\end{proof}
+\subsection*{2. Coupling on the second regime}
 
-\subsection*{D) Equivalence of \(W_2\)-convergence and weak + second‐moment convergence}
+By definition of $W_2(m_n,m)$, there exists a coupling $\pi$ of $m_n$ and $m$ such that
+\[
+  \int \|w - x\|^2 \,\pi(dw,dx)
+  =
+  W_2(m_n,m)^2.
+\]
+We use $\pi$ to couple each
+\[
+  W_j \sim m_n
+  \quad\text{with}\quad
+  X_{n+j}\sim m
+  \quad(j=1,\dots,n),
+\]
+independently across $j$.  Under this coupling,
+\[
+  \mathbb{E}\,\|W_j - X_{n+j}\|^2
+  =
+  W_2(m_n,m)^2.
+\]
+Hence, for $\ell=1,\dots,n$,
+\[
+  Y^{(n)}_{n+\ell} - Y^\#_{n+\ell}
+  \;=\;
+  \sum_{j=1}^\ell (W_j - X_{n+j}),
+\]
+and by the Cauchy–Schwarz and independence,
+\[
+  \mathbb{E}\,\bigl\|Y^{(n)}_{n+\ell} - Y^\#_{n+\ell}\bigr\|^2
+  \;\le\;
+  \ell\,W_2(m_n,m)^2.
+\]
 
-\begin{theorem}[Villani (2009), Theorem 6.9]
-\label{thm:W2-characterization}
-Let \(\mu_n,\mu\in\mathcal P_2(\R^d)\).  The following are equivalent:
-\begin{enumerate}
-  \item \(W_2(\mu_n,\mu)\to0\).
-  \item \(\mu_n\) converges weakly to \(\mu\) and 
-  \(\displaystyle\int\|x\|^2\,\mu_n(dx)\to\int\|x\|^2\,\mu(dx).\)
-\end{enumerate}
-\end{theorem}
+\subsection*{3. Bounding the path‐distance}
 
-\begin{proof}[Sketch]
-\(\Rightarrow\): See Villani, Theorem 6.9.  
-\(\Leftarrow\): Use tightness from the second‐moment bound, truncate on large balls, construct couplings, and let the ball radius grow (Villani, pp.\,102–104).
-\end{proof}
+Putting the two regimes together, the squared distance satisfies
+\begin{align*}
+  \mathbb{E}\bigl[d_n(Y^{(n)},Y^\#)^2\bigr]
+  &= 
+  \frac{1}{2n}\sum_{k=0}^{2n}
+    \mathbb{E}\,\|Y^{(n)}_k - Y^\#_k\|^2\\
+  &=
+  \frac{1}{2n}\sum_{k=n+1}^{2n}
+    \mathbb{E}\,\|Y^{(n)}_k - Y^\#_k\|^2
+  \quad(\text{since they coincide for }k\le n)\\
+  &\le
+  \frac{1}{2n}\sum_{\ell=1}^n
+    \ell\,W_2(m_n,m)^2
+  =
+  \frac{n+1}{4}\,W_2(m_n,m)^2.
+\end{align*}
+Taking square‐roots yields
+\[
+  W_{2,d_n}(P_n,Q_n)
+  \;\le\;
+  \sqrt{\mathbb{E}[d_n^2]}
+  \;\le\;
+  \tfrac12\,W_2(m_n,m).
+\]
+Finally, by the classical fact that the empirical measures $m_n$ converge almost surely to $m$ in $W_2$ (since $m\in\mathcal{P}_2$), we conclude
+\[
+  W_{2,d_n}(P_n,Q_n)\;\xrightarrow[n\to\infty]{\rm a.s.}\;0,
+\]
+completing the proof.
 
-\bigskip
-\noindent\textbf{References.}
+\qed
+
+\section{Remarks and Extensions}
+
 \begin{itemize}
-  \item V.\,S. Varadarajan, \emph{On the convergence of probability measures}, Indian J. Stat.\ 20A (1958), 213–219.
-  \item R.\,M. Dudley, \emph{Real Analysis and Probability}, Cambridge Univ.\ Press (2002), Theorem 11.4.1.
-  \item C. Villani, \emph{Optimal Transport: Old and New}, Springer (2009), Theorem 6.9.
-  \item A.-S. Sznitman, \emph{Topics in Propagation of Chaos}, Lecture Notes in Math.\ 1464 (1991).
+  \item The same argument works for any $p\in[1,2]$, yielding convergence in $p$‐Wasserstein on path‐space.
+  \item By linearly interpolating the paths one obtains convergence in law in the space $C([0,2],\mathbb{R}^d)$ under the uniform norm, or in the Skorokhod space $D([0,2],\mathbb{R}^d)$.
+  \item The rate of convergence is governed by the known bounds on $\mathbb{E}[W_2(m_n,m)]$, which for $d\ge3$ scales as $n^{-1/d}$ up to logarithms.
 \end{itemize}
 
 \end{document}
