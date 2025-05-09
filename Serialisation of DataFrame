@@ -1,203 +1,99 @@
-\documentclass[12pt]{article}
-\usepackage{amsmath,amssymb,amsthm}
-\usepackage{hyperref}
-\usepackage{geometry}
-\geometry{margin=1in}
+using System;
+using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Microsoft.Data.Analysis;
 
-\theoremstyle{definition}
-\newtheorem{definition}{Definition}[section]
-\theoremstyle{plain}
-\newtheorem{theorem}[definition]{Theorem}
-\newtheorem{lemma}[definition]{Lemma}
-\newtheorem{remark}[definition]{Remark}
+public class DataFrameJsonConverter : JsonConverter<DataFrame>
+{
+    public override DataFrame ReadJson(JsonReader reader, Type objectType, DataFrame existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        // Load the entire JSON object
+        var root = JObject.Load(reader);
+        var df = new DataFrame();
 
-\begin{document}
+        // Drill into your "Data" → "Columns" array
+        var columns = root["Data"]?["Columns"] as JArray;
+        if (columns == null)
+            throw new JsonSerializationException("Expected Data.Columns array");
 
-\title{Convergence of Two-Regime Random Walks to a Single-Regime Limit}
-\author{ }
-\date{ }
-\maketitle
+        foreach (var colToken in columns)
+        {
+            var name = colToken.Value<string>("Name");
+            var typeName = colToken.Value<string>("DataType");
+            var values = colToken["Values"] as JArray;
 
-\begin{abstract}
-We study an $\mathbb{R}^d$–valued random walk $Y^{(n)}$ on the discrete time‐grid $\{0,1,\dots,2n\}$ whose increments are drawn in two different regimes:
-\begin{itemize}
-  \item \emph{First regime} (times $0$ to $n$): true i.i.d.\ samples from a probability measure $m$ on $\mathbb{R}^d$.
-  \item \emph{Second regime} (times $n$ to $2n$): i.i.d.\ samples from the empirical measure $m_n$ built on the first $n$ increments.
-\end{itemize}
-Under a finite‐second‐moment assumption on $m$, we prove that as $n\to\infty$, the law of $Y^{(n)}$ converges (in a suitable $2$‐Wasserstein sense on path‐space) to that of the classical single‐regime random walk whose all increments are drawn from $m$.  The proof uses an explicit coupling and quantitative bounds on the $2$‐Wasserstein distance.
-\end{abstract}
+            if (name == null || typeName == null || values == null)
+                throw new JsonSerializationException("Column missing Name, DataType, or Values");
 
-\section{Introduction}
+            DataFrameColumn column;
 
-Random walks whose increments are sampled from different distributions in different time‐windows arise naturally in situations where one first gathers data and then resamples from it.  Intuitively, as the sample size grows, one expects the “two‐regime” walk to look more and more like the classical walk driven purely by the true distribution.  Our goal is to make this intuition precise and quantitative.
+            switch (typeName)
+            {
+                case "Int32":
+                    {
+                        var intCol = new Int32DataFrameColumn(name, values.Count);
+                        for (long i = 0; i < values.Count; i++)
+                        {
+                            var tok = values[(int)i];
+                            intCol[i] = tok.Type == JTokenType.Null
+                                ? (int?)null
+                                : tok.Value<int>();
+                        }
+                        column = intCol;
+                        break;
+                    }
+                case "Double":
+                    {
+                        var dblCol = new DoubleDataFrameColumn(name, values.Count);
+                        for (long i = 0; i < values.Count; i++)
+                        {
+                            var tok = values[(int)i];
+                            dblCol[i] = tok.Type == JTokenType.Null
+                                ? (double?)null
+                                : tok.Value<double>();
+                        }
+                        column = dblCol;
+                        break;
+                    }
+                case "DateTime":
+                    {
+                        // PrimitiveDataFrameColumn<T> works for DateTime
+                        var dtCol = new PrimitiveDataFrameColumn<DateTime?>(name, values.Count);
+                        for (long i = 0; i < values.Count; i++)
+                        {
+                            var tok = values[(int)i];
+                            dtCol[i] = tok.Type == JTokenType.Null
+                                ? (DateTime?)null
+                                : tok.Value<DateTime>();
+                        }
+                        column = dtCol;
+                        break;
+                    }
+                default:
+                    {
+                        // Fallback to string
+                        var strCol = new StringDataFrameColumn(name, values.Count);
+                        for (long i = 0; i < values.Count; i++)
+                        {
+                            var tok = values[(int)i];
+                            strCol[i] = tok.Type == JTokenType.Null
+                                ? null
+                                : tok.ToString();
+                        }
+                        column = strCol;
+                        break;
+                    }
+            }
 
-\section{Preliminaries}
+            df.Columns.Add(column);
+        }
 
-\begin{definition}[Probability measure with finite second moment]
-Let $m$ be a probability measure on $\mathbb{R}^d$.  We say $m$ has \emph{finite second moment} if
-\[
-  \int_{\mathbb{R}^d} \|x\|^2 \, m(dx) \;<\;\infty.
-\]
-\end{definition}
+        return df;
+    }
 
-\begin{definition}[$2$--Wasserstein distance]
-Let $\mathcal{P}_2(\mathbb{R}^d)$ denote probability measures on $\mathbb{R}^d$ with finite second moment.  For $\mu,\nu\in\mathcal{P}_2(\mathbb{R}^d)$, the \emph{$2$–Wasserstein distance} is
-\[
-  W_2(\mu,\nu)
-  \;=\;
-  \Bigl(\,
-    \inf_{\pi\in\Pi(\mu,\nu)}
-    \int_{\mathbb{R}^d\times\mathbb{R}^d}
-      \|x-y\|^2 \,\pi(dx,dy)
-  \Bigr)^{\!\!1/2},
-\]
-where $\Pi(\mu,\nu)$ is the set of couplings of $\mu$ and $\nu$.
-\end{definition}
-
-We will also need a path‐space metric on $(\mathbb{R}^d)^{2n+1}$.
-
-\begin{definition}[Normalized path‐metric]
-For two paths $y=(y_0,\dots,y_{2n})$ and $y'=(y'_0,\dots,y'_{2n})$ in $(\mathbb{R}^d)^{2n+1}$, define
-\[
-  d_n(y,y')
-  \;=\;\sqrt{\frac{1}{2n}
-    \sum_{k=0}^{2n}\|y_k - y'_k\|^2}\,.
-\]
-\end{definition}
-
-\section{Model Description}
-
-Fix $n\in\mathbb{N}$.  Let
-\[
-  Z_1,\dots,Z_n \;\stackrel{\mathrm{iid}}{\sim}\; m,
-  \qquad
-  m_n \;=\;\frac{1}{n}\sum_{i=1}^n\delta_{Z_i},
-\]
-and independently let
-\[
-  W_1,\dots,W_n \;\stackrel{\mathrm{iid}}{\sim}\; m_n.
-\]
-Define the \emph{two‐regime random walk} $Y^{(n)}=(Y^{(n)}_k)_{k=0}^{2n}$ by
-\begin{align*}
-  Y^{(n)}_0 &= 0,\\
-  Y^{(n)}_k &= \sum_{i=1}^k Z_i,
-  \quad 1\le k\le n,\\
-  Y^{(n)}_{n+\ell}
-    &= \sum_{i=1}^n Z_i + \sum_{j=1}^\ell W_j,
-  \quad 1\le \ell\le n.
-\end{align*}
-
-Independently, let $(X_i)_{i\ge1}$ be i.i.d.\ samples from $m$, and define the \emph{single‐regime walk}
-\[
-  Y^\#_k \;=\; \sum_{i=1}^k X_i,
-  \quad k\ge1,\quad Y^\#_0=0.
-\]
-Denote by $P_n=\mathcal{L}(Y^{(n)})$ and $Q_n=\mathcal{L}(Y^\#_0,\dots,Y^\#_{2n})$ their laws on path‐space.
-
-\section{Main Theorem}
-
-\begin{theorem}
-\label{thm:main}
-Assume $m\in\mathcal{P}_2(\mathbb{R}^d)$.  Then
-\[
-  W_{2,d_n}(P_n,\,Q_n)
-  \;\le\;
-  \tfrac12\,W_2(m_n,\,m)
-  \;\xrightarrow[n\to\infty]{\text{a.s.}}\;0.
-\]
-In particular, $P_n\to Q_n$ in $2$‐Wasserstein on $((\mathbb{R}^d)^{2n+1},d_n)$, so that $Y^{(n)}$ converges in law to the single‐regime walk $Y^\#$.
-\end{theorem}
-
-\section{Proof of Theorem \ref{thm:main}}
-
-The proof proceeds by constructing an explicit coupling of the two‐regime walk and the single‐regime walk, then bounding the expected path‐distance.
-
-\subsection*{1. Coupling on the first regime}
-
-We couple the increments in the first half by setting
-\[
-  Z_i = X_i,\quad i=1,\dots,n.
-\]
-Under this coupling, 
-\[
-  Y^{(n)}_k = Y^\#_k,\quad k=0,1,\dots,n,
-\]
-so the two paths coincide exactly on the times $0$ through $n$.
-
-\subsection*{2. Coupling on the second regime}
-
-By definition of $W_2(m_n,m)$, there exists a coupling $\pi$ of $m_n$ and $m$ such that
-\[
-  \int \|w - x\|^2 \,\pi(dw,dx)
-  =
-  W_2(m_n,m)^2.
-\]
-We use $\pi$ to couple each
-\[
-  W_j \sim m_n
-  \quad\text{with}\quad
-  X_{n+j}\sim m
-  \quad(j=1,\dots,n),
-\]
-independently across $j$.  Under this coupling,
-\[
-  \mathbb{E}\,\|W_j - X_{n+j}\|^2
-  =
-  W_2(m_n,m)^2.
-\]
-Hence, for $\ell=1,\dots,n$,
-\[
-  Y^{(n)}_{n+\ell} - Y^\#_{n+\ell}
-  \;=\;
-  \sum_{j=1}^\ell (W_j - X_{n+j}),
-\]
-and by the Cauchy–Schwarz and independence,
-\[
-  \mathbb{E}\,\bigl\|Y^{(n)}_{n+\ell} - Y^\#_{n+\ell}\bigr\|^2
-  \;\le\;
-  \ell\,W_2(m_n,m)^2.
-\]
-
-\subsection*{3. Bounding the path‐distance}
-
-Putting the two regimes together, the squared distance satisfies
-\begin{align*}
-  \mathbb{E}\bigl[d_n(Y^{(n)},Y^\#)^2\bigr]
-  &= 
-  \frac{1}{2n}\sum_{k=0}^{2n}
-    \mathbb{E}\,\|Y^{(n)}_k - Y^\#_k\|^2\\
-  &=
-  \frac{1}{2n}\sum_{k=n+1}^{2n}
-    \mathbb{E}\,\|Y^{(n)}_k - Y^\#_k\|^2
-  \quad(\text{since they coincide for }k\le n)\\
-  &\le
-  \frac{1}{2n}\sum_{\ell=1}^n
-    \ell\,W_2(m_n,m)^2
-  =
-  \frac{n+1}{4}\,W_2(m_n,m)^2.
-\end{align*}
-Taking square‐roots yields
-\[
-  W_{2,d_n}(P_n,Q_n)
-  \;\le\;
-  \sqrt{\mathbb{E}[d_n^2]}
-  \;\le\;
-  \tfrac12\,W_2(m_n,m).
-\]
-Finally, by the classical fact that the empirical measures $m_n$ converge almost surely to $m$ in $W_2$ (since $m\in\mathcal{P}_2$), we conclude
-\[
-  W_{2,d_n}(P_n,Q_n)\;\xrightarrow[n\to\infty]{\rm a.s.}\;0,
-\]
-completing the proof.
-
-\qed
-
-\section{Remarks and Extensions}
-
-\begin{itemize}
-  \item The same argument works for any $p\in[1,2]$, yielding convergence in $p$‐Wasserstein on path‐space.
-  \item By linearly interpolating the paths one obtains convergence in law in the space $C([0,2],\mathbb{R}^d)$ under the uniform norm, or in the Skorokhod space $D([0,2],\mathbb{R}^d)$.
-  \item The rate of convergence is governed by the known bounds on $\mathbb{E}[W_2(m_n,m)]$, which for $d\ge3$ scales as $n^{-1/d}$ up to logarithms.
-\end{itemize}
-
-\end{document}
+    public override void WriteJson(JsonWriter writer, DataFrame value, JsonSerializer serializer)
+    {
+        throw new NotImplementedException("Serialization not implemented");
+    }
+}
