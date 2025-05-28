@@ -1,188 +1,200 @@
-\documentclass[12pt]{article}
-\usepackage{amsmath,amssymb,amsthm}
+\documentclass[11pt]{article}
+\usepackage{amsmath,amsfonts,amsthm,enumitem}
 \usepackage{hyperref}
-\usepackage{geometry}
-\geometry{margin=1in}
 
-\theoremstyle{definition}
-\newtheorem{definition}{Definition}[section]
-\theoremstyle{plain}
-\newtheorem{theorem}[definition]{Theorem}
-\newtheorem{lemma}[definition]{Lemma}
-\newtheorem{remark}[definition]{Remark}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+
+\numberwithin{equation}{section}
 
 \begin{document}
 
-\title{Convergence of Two‐Regime Random Walks to a Single‐Regime Limit}
-\author{ }
-\date{ }
+\title{An Extension of the Cameron–Martin Theorem}
+\author{}
+\date{}
 \maketitle
 
-\begin{abstract}
-We study an $\R^d$–valued random walk $Y^{(n)}$ on the discrete time‐grid $\{0,1,\dots,2n\}$ whose increments are drawn in two different regimes:
-\begin{itemize}
-  \item \textbf{First regime} (times $0$ to $n$): true i.i.d.\ samples $Z_i\sim m$.
-  \item \textbf{Second regime} (times $n$ to $2n$): i.i.d.\ samples $W_j\sim m_n$, the empirical measure of the $Z_i$.
-\end{itemize}
-Under a finite‐second‐moment assumption on $m$, we prove that as $n\to\infty$, the law of $Y^{(n)}$ converges in $2$‐Wasserstein on path‐space to that of the classical single‐regime random walk whose all increments are drawn from $m$.  The proof uses an explicit coupling and quantitative bounds on the $2$‐Wasserstein distance.
-\end{abstract}
+\section{Setup and notation}
 
-\section{Introduction}
-
-Random walks with a ``gather‐then‐resample'' structure arise naturally in statistical bootstrap procedures.  It is intuitively clear that, as the sample size $n$ grows, the two‐regime walk should resemble more and more the classical walk driven purely by the true law $m$.  Our goal is to make this precise in a $2$‐Wasserstein sense on path‐space, without imposing any additional assumptions on the joint dependence between the two walks beyond their marginals.
-
-\section{Preliminaries}
-
-\begin{definition}[Finite second moment]
-A probability measure $m$ on $\R^d$ has \emph{finite second moment} if
+Let $(\Omega,A,W)$ be the classical Wiener space over $[0,T]$, with canonical process $Y_t(\omega)=\omega(t)$ and its natural filtration $\{\F_t\}_{0\le t\le T}$.  Let 
 \[
-  \int_{\R^d}\|x\|^2\,m(dx)<\infty.
+  b\colon [0,T]\times\R^d\;\longrightarrow\;\R^d
 \]
-\end{definition}
-
-\begin{definition}[$2$–Wasserstein distance]
-For $\mu,\nu\in\mathcal P_2(\R^d)$, the $2$–Wasserstein distance is
+be a bounded, measurable drift such that the SDE
 \[
-  W_2(\mu,\nu)
-  =
-  \Bigl(\inf_{\pi\in\Pi(\mu,\nu)}
-    \int_{\R^d\times\R^d}\|x-y\|^2\,\pi(dx,dy)
-  \Bigr)^{1/2},
+  dX_t \;=\; b\bigl(t,X_t\bigr)\,dt \;+\; dY_t,\qquad X_0=0,
 \]
-where $\Pi(\mu,\nu)$ is the set of couplings of $\mu$ and $\nu$.
-\end{definition}
-
-\begin{definition}[Normalized path metric]
-On $(\R^d)^{2n+1}$ define
+admits a unique strong solution.  Denote by 
 \[
-  d_n(y,y')
-  =\sqrt{\frac1{2n}\sum_{k=0}^{2n}\|y_k-y'_k\|^2}.
+  R\colon \Omega\;\longrightarrow\;\Omega
 \]
-\end{definition}
-
-\subsection*{On existence of an optimal coupling}
-\begin{lemma}[Existence of minimizer; e.g.\ Villani {\normalfont\cite[Thm.~4.1]{Villani2008}}]
-Let $\mu,\nu\in\mathcal P_2(\R^d)$.  Then there exists $\bar\pi\in\Pi(\mu,\nu)$ achieving the infimum in the definition of $W_2(\mu,\nu)$.  In particular, when one marginal is finitely supported (as $m_n$ is), the admissible set of couplings is compact in finite dimensions, and the cost functional is continuous.
-\end{lemma}
-
-\section{Model Description}
-
-Fix $n\in\N$.  Let
+the \emph{solution map} characterized by 
 \[
-  Z_1,\dots,Z_n\;\iid\;m,
-  \quad
-  m_n=\tfrac1n\sum_{i=1}^n\delta_{Z_i},
-  \quad
-  W_1,\dots,W_n\;\iid\;m_n.
+  X_t(\omega)\;=\; \bigl(R(\omega)\bigr)(t)
+  \quad\text{$W$–a.s.}
 \]
-Define the \emph{two‐regime walk}
-\[
-  Y^{(n)}_0=0,\quad
-  Y^{(n)}_k=\sum_{i=1}^k Z_i\;(1\le k\le n),
-  \quad
-  Y^{(n)}_{n+\ell}
-    =\sum_{i=1}^n Z_i + \sum_{j=1}^\ell W_j\;(1\le\ell\le n).
-\]
-Independently, let $X_1,X_2,\dots\iid m$ and set the \emph{single‐regime walk}
-\[
-  Y^\#_0=0,\quad Y^\#_k=\sum_{i=1}^k X_i,\;k\ge1.
-\]
-Denote $P_n=\Law(Y^{(n)})$, $Q_n=\Law(Y^\#_0,\dots,Y^\#_{2n})$ on $((\R^d)^{2n+1},d_n)$.
+Define the stochastic exponent
+\begin{equation}\label{eq:Zb}
+  Z^b(\omega)(t)
+  \;=\;
+  \int_0^t b\bigl(s,\omega(s)\bigr)\,d\omega(s)
+  \;-\;\frac12\int_0^t \bigl\lvert b(s,\omega(s))\bigr\rvert^2\,ds,
+\end{equation}
+which is a true martingale under $W$.
 
-\begin{remark}
-We do \emph{not} assume the sequence $(X_k)$ is independent of the sequences $(Z_i)$ or $(W_j)$ in any \emph{original} joint model.  The only requirement is that under whichever joint law we choose, the marginal of $(Y^{(n)})$ is $P_n$ and of $(Y^\#)$ is $Q_n$.  Convergence in $W_2$ then follows by exhibiting a suitable coupling of those marginals.
-\end{remark}
-
-\section{Main Theorem}
-
-\begin{theorem}\label{thm:main}
-If $m\in\mathcal P_2(\R^d)$ then
-\[
-  W_{2,d_n}(P_n,Q_n)\;\le\;\tfrac12\,W_2(m_n,m)
-  \;\xrightarrow[n\to\infty]{\rm a.s.}\;0.
-\]
-Hence $P_n\to Q_n$ in $W_2$ on $((\R^d)^{2n+1},d_n)$.
+\begin{theorem}
+Under the above hypotheses, the following hold:
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{(Push–forward law)}  
+    $$
+      R_*W
+      \;=\;
+      \Law(X)
+      \quad\text{on }(\Omega,A).
+    $$
+  \item \textbf{(Girsanov density)}  
+    For each $t\in[0,T]$, $R_*W\ll W$ on $\F_t$ and
+    \[
+      \frac{d\bigl(R_*W\bigr)}{dW}\Bigm|\_{\F_t}
+      (\omega)
+      \;=\;
+      \exp\!\bigl(Z^b(\omega)(t)\bigr).
+    \]
+  \item \textbf{(Inverse–map density)}  
+    Define
+    \[
+      T\colon\Omega\;\longrightarrow\;\Omega,
+      \qquad
+      \bigl(T(\omega)\bigr)(t)
+      = \omega(t)
+      \;+\;
+      \int_0^t b\bigl(s,\omega(s)\bigr)\,ds.
+    \]
+    Then $T=R^{-1}$ $W$–a.s., and for each $t$,
+    \[
+      \frac{d\bigl(T_*W\bigr)}{dW}\Bigm|\_{\F_t}
+      (\omega)
+      \;=\;
+      \exp\!\bigl(-\,Z^b(\omega)(t)\bigr).
+    \]
+\end{enumerate}
 \end{theorem}
 
-\section{Proof of Theorem \ref{thm:main}}
-
-We construct an explicit coupling $\pi^*\in\Pi(P_n,Q_n)$.
-
-\subsection*{1. First regime: exact matching}
-
-Couple $Z_i=X_i$ for $i=1,\dots,n$.  Then
+\begin{lemma}[Invertibility of Radon–Nikodym derivatives]
+\label{lem:invert-RN}
+Let $(\Omega,\F)$ be a measurable space and $\mu,\nu$ two $\sigma$–finite measures with $\nu\ll\mu$.  Write
 \[
-  Y^{(n)}_k = Y^\#_k,\quad k=0,\dots,n.
+  L \;=\;\frac{d\nu}{d\mu}.
+\]
+Then $\mu\ll\nu$, and
+\[
+  \frac{d\mu}{d\nu}
+  \;=\;
+  \frac1L
+  \quad
+  \text{$\nu$–a.s.}
+\]
+\end{lemma}
+
+\begin{proof}
+Since $\nu\ll\mu$, whenever $\nu(E)=0$ we have
+\[
+  0
+  \;=\;
+  \int_E L\,d\mu
+  \;\Longrightarrow\;
+  \mu\bigl(E\cap\{L>0\}\bigr)=0.
+\]
+On the other hand, on the set $\{L=0\}$ we see immediately
+\[
+  \nu\bigl(E\cap\{L=0\}\bigr)
+  = \int_{E\cap\{L=0\}} L\,d\mu
+  = 0
+  \quad\Longrightarrow\quad
+  E\cap\{L=0\}
+  \;\text{is }\mu\text{–null.}
+\]
+Hence $\mu(E)=0$ whenever $\nu(E)=0$, so $\mu\ll\nu$.  Moreover, by the standard uniqueness of Radon–Nikodym derivatives, the function $1/L$ on $\{L>0\}$ gives
+\[
+  \int_E \frac1L\,d\nu
+  = \int_E \frac{1}{L} \,L\,d\mu
+  = \mu(E),
+  \qquad
+  \forall E\subset\{L>0\},
+\]
+showing $d\mu/d\nu=1/L$ $\nu$–a.s.
+\end{proof}
+
+\begin{proof}[Proof of Theorem]
+We divide the argument into three parts.
+
+\medskip
+
+\noindent\textbf{(i) Push–forward law.}
+By definition of $R$ and of the law of the solution,
+\[
+  R_*W(E)
+  \;=\;
+  W\bigl(\{\omega:R(\omega)\in E\}\bigr)
+  \;=\;
+  \P\bigl(X\in E\bigr)
+  \;=\;
+  \Law(X)(E),
+  \quad
+  \forall E\in A.
 \]
 
-\subsection*{2. Second regime: optimal coupling}
+\medskip
 
-By Lemma 2.1 there exists an optimal coupling
-\(\bar\pi\in\Pi(m_n,m)\) with 
-\(\int\|w-x\|^2\,\bar\pi(dw,dx)=W_2(m_n,m)^2\).
-Use \(\bar\pi\) to couple each pair
-\((W_j,X_{n+j})\sim\bar\pi\), independently over \(j=1,\dots,n\).
-Set
+\noindent\textbf{(ii) Girsanov density.}
+This is the classical Girsanov theorem on the Wiener space (see, \emph{e.g.}, Taylor’s PDE notes).  One shows
 \[
-  Z_j := W_j - X_{n+j},\quad j=1,\dots,n.
+  R_*W\ll W
+  \quad\text{on }\F_t,
+  \qquad
+  \frac{d(R_*W)}{dW}\Bigm|\_{\F_t}
+  = \exp\!\bigl(Z^b(\cdot)(t)\bigr),
 \]
-Then $\{Z_j\}$ are i.i.d.\ with zero mean (by unbiasedness of $m_n$) and 
-\(
-\E\|Z_j\|^2 = W_2(m_n,m)^2.
-\)
+where $Z^b(\omega)(t)$ is given in \eqref{eq:Zb}.  The proof proceeds by either the Trotter product formula or by Itô’s formula and uniqueness of the associated heat semigroup.
 
-\subsubsection*{Extension of the triangle inequality to the quadratic case}
+\medskip
 
-For each $\ell\le n$,
+\noindent\textbf{(iii) Inverse–map density.}
+Observe that by construction
 \[
-  Y^{(n)}_{n+\ell}-Y^\#_{n+\ell}
-  = \sum_{j=1}^\ell Z_j.
+  T\circ R \;=\;\mathrm{id}
+  \quad\text{and}\quad
+  R\circ T \;=\;\mathrm{id}
+  \quad
+  W\text{–a.s.},
 \]
-By expansion,
+so $T=R^{-1}$ almost surely.  From part (ii) we know
 \[
-  \Bigl\|\sum_{j=1}^\ell Z_j\Bigr\|^2
-  = \sum_{j=1}^\ell\|Z_j\|^2
-    + 2\sum_{1\le i<j\le \ell}\langle Z_i,Z_j\rangle.
+  \nu \;:=\; R_*W
+  \quad\text{and}\quad
+  L(\omega)
+  = \frac{d\nu}{dW}\Bigm|\_{\F_t}(\omega)
+  = \exp\!\bigl(Z^b(\omega)(t)\bigr).
 \]
-Taking expectations:
+Hence by Lemma~\ref{lem:invert-RN}, $W\ll\nu$ as well and
 \[
-  \E\Bigl\|\sum_{j=1}^\ell Z_j\Bigr\|^2
-  = \sum_{j=1}^\ell \E\|Z_j\|^2
-    + 2\sum_{i<j}\E\langle Z_i,Z_j\rangle.
+  \frac{dW}{d\nu}\Bigm|\_{\F_t}
+  = \frac1L \;=\;\exp\!\bigl(-Z^b(\omega)(t)\bigr).
 \]
-Since the $Z_j$ are independent with $\E[Z_j]=0$, for $i\neq j$,
-\(
-  \E\langle Z_i,Z_j\rangle
-  = \langle\E Z_i,\E Z_j\rangle
-  =0.
-\)
-Hence
+But since $\nu=R_*W$, pulling back along $R^{-1}=T$ gives
 \[
-  \E\bigl\|Y^{(n)}_{n+\ell}-Y^\#_{n+\ell}\bigr\|^2
-  = \ell\,W_2(m_n,m)^2.
+  \frac{d\bigl(T_*W\bigr)}{dW}\Bigm|\_{\F_t}
+  (\omega)
+  = \frac{dW}{d(R_*W)}\Bigm|\_{\F_t}\bigl(T(\omega)\bigr)
+  = \exp\!\bigl(-Z^b(T(\omega))(t)\bigr).
 \]
-
-\subsection*{3. Bounding the path‐distance}
-
-Therefore
-\begin{align*}
-  \E[d_n(Y^{(n)},Y^\#)^2]
-  &= \frac1{2n}\sum_{k=0}^{2n}\E\|Y^{(n)}_k-Y^\#_k\|^2
-   = \frac1{2n}\sum_{\ell=1}^n \ell\,W_2(m_n,m)^2
-   = \frac{n+1}{4}\,W_2(m_n,m)^2.
-\end{align*}
-Taking square roots yields
-\(
-  W_{2,d_n}(P_n,Q_n)\le\tfrac12\,W_2(m_n,m)\to0.
-\)
-
-\qed
-
-\begin{thebibliography}{9}
-\bibitem{Villani2008}
-C.~Villani,
-\newblock \emph{Optimal Transport: Old and New},
-\newblock Springer, 2008, Theorem 4.1.
-\end{thebibliography}
+Finally, a straightforward Itô–calculation shows
+\[
+  Z^b\bigl(T(\omega)\bigr)(t)
+  = Z^b(\omega)(t),
+\]
+since $d\bigl(T(\omega)\bigr)_s = d\omega(s) + b\bigl(s,\omega(s)\bigr)\,ds$
+and the extra drift term cancels out in the stochastic exponent.  This completes the proof of (iii).
+\end{proof}
 
 \end{document}
