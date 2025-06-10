@@ -1,82 +1,222 @@
 \begin{proof}
-Fix a past‐trajectory 
-\(\beta\in \supp\bigl(\nu_n^{\le t_n}\bigr)\).  By construction, once the path up to time \(t_n\) is fixed to be \(\beta\), the \emph{only} remaining randomness in the future evolution of \(X\) on 
-\(\{t_{n+1},\dots,t_{2n}\}\) 
-comes from the increments
+We work on the measurable spaces
 \[
-\zeta_{n+1},\,\zeta_{n+2},\;\dots,\;\zeta_{2n},
+\bigl(C(\mathcal I_n,\R^d),\B\bigl(C(\mathcal I_n,\R^d)\bigr)\bigr)
+\quad\text{and}\quad
+\bigl(C(\mathcal I_n^{\le t},\R^d),\B\bigl(C(\mathcal I_n^{\le t},\R^d)\bigr)\bigr).
 \]
-which under the conditional law
-\(\nu_n[\cdot\mid\gamma_X^{\le t_n}=\beta]\)
-are i.i.d.\ with the empirical distribution
-\[
-\widehat m_n
-=\frac1n\sum_{k=1}^n\delta_{\zeta_k(\beta)}.
-\]
-In particular each \(\zeta_{n+\ell}\) takes values in the finite set 
-\(\{\zeta_1(\beta),\dots,\zeta_n(\beta)\}\subset\R^d\).
+Since both path‐spaces are Polish (being closed subsets of a separable Banach space under the supremum norm) and \(\pi^{\le t}\) is continuous, the pair \((\pi^{\le t},\B)\) is a \emph{standard Borel} map.
 
 \medskip
-\noindent\textbf{Step 1: Support of the increments.}\\
+\noindent\textbf{Step 1: Existence of a disintegration.}\\
+By the classical Disintegration Theorem for standard Borel spaces (see, e.g., Kallenberg, \emph{Foundations of Modern Probability}, Thm.\ 6.3; or Parthasarathy, \emph{Probability Measures on Metric Spaces}, Thm.\ 7.1), there exists a family of probability measures 
 \[
-\Supp\bigl(\Law(\zeta_{n+1},\dots,\zeta_{2n}\mid\beta)\bigr)
-\;=\;
-\bigl\{\zeta_{k_1}(\beta)\bigr\}_{k_1=1}^n
-\times\cdots\times
-\bigl\{\zeta_{k_n}(\beta)\bigr\}_{k_n=1}^n,
+\bigl\{\,\lambda[\cdot\mid\beta]^{\le t} : \beta\in C(\mathcal I_n^{\le t},\R^d)\bigr\}
 \]
-a finite subset of \((\R^d)^n\).
+on \(C(\mathcal I_n,\R^d)\) and a marginal \(\lambda^{\le t}\) on \(C(\mathcal I_n^{\le t},\R^d)\) such that:
+
+1. \(\lambda^{\le t} = (\pi^{\le t})_*\,\lambda\).  
+2. For each Borel \(E\subset C(\mathcal I_n,\R^d)\), the map  
+   \(\beta\mapsto \lambda[E\mid\beta]^{\le t}\)  
+   is \(\B\bigl(C(\mathcal I_n^{\le t},\R^d)\bigr)\)-measurable.  
+3. For \(\lambda^{\le t}\)-almost every \(\beta\), \(\lambda[\pi^{\le t}{}^{-1}(\{\beta\})\mid\beta]^{\le t}=1\).  
+4. For every Borel \(E\), the disintegration formula holds:  
+   \[
+     \lambda(E)
+       = \int_{C(\mathcal I_n^{\le t},\R^d)}
+         \lambda\bigl[E\bigm|\beta\bigr]^{\le t}\,
+         \lambda^{\le t}(d\beta).
+   \]
 
 \medskip
-\noindent\textbf{Step 2: Construction of the node‐sets.}\\
-Write \(Y(t_k)=\log X(t_k)\).  Since the update
-\[
-Y(t_{n+\ell})
-=Y(t_n;\beta)
-+\sum_{j=1}^\ell \zeta_{n+j}
-\]
-is deterministic given the increments, the only possible states at time \(t_{n+\ell}\) are
-\[
-Y(t_n;\beta)
-+\sum_{j=1}^\ell \zeta_{k_j}(\beta),
-\quad
-k_j\in\{1,\ldots,n\}.
-\]
-Define, for each \(\ell=0,1,\dots,n\),
-\[
-L^n_\ell(\beta)
-\;=\;
-\Bigl\{\,Y(t_n;\beta)
-+\sum_{j=1}^\ell \zeta_{k_j}(\beta)
-\;\Bigm|\;
-k_j\in\{1,\dots,n\}
-\Bigr\}.
-\]
-By construction \(L^n_0(\beta)=\{Y(t_n;\beta)\}\) and each \(L^n_\ell(\beta)\) is a \emph{finite} subset of \(\R^d\).
+\noindent\textbf{Step 2: Fiber consistency and measurability.}\\
+Properties (2)–(4) above are exactly the \emph{fiber consistency}, \emph{measurability}, and \emph{disintegration formula} required in the statement.  Uniqueness (up to \(\lambda^{\le t}\)-null sets) of the conditional kernels is also guaranteed by the standard theorem.
 
 \medskip
-\noindent\textbf{Step 3: The \(n\)‐nomial tree.}\\
-Set
-\[
-T_n(\beta)
-=\bigcup_{\ell=0}^n
-\bigl\{\,\bigl(t_{n+\ell},\,x\bigr)\;:\;x\in L^n_\ell(\beta)\bigr\}.
-\]
-Then \(T_n(\beta)\) is a discrete subset of \([t_n,t_{2n}]\times\R^d\) whose nodes form an \(n\)‐nomial tree of height \(n\), rooted at \((t_n,Y(t_n;\beta))\).
-
-\medskip
-\noindent\textbf{Step 4: Support of the conditional law.}\\
-Since the future path \(\gamma_X\bigl|_{[t_n,t_{2n}]}\) is a deterministic function of the increments \((\zeta_{n+1},\dots,\zeta_{2n})\), the support of
-\[
-\nu_n\bigl[\cdot\mid\gamma_X^{\le t_n}=\beta\bigr]
-\;=\;
-\Law\bigl(\gamma_X\mid\beta\bigr)
-\]
-is exactly the set of full paths which
-\begin{itemize}
-  \item coincide with \(\beta\) on \([t_0,t_n]\), and
-  \item at each future date \(t_{n+\ell}\) lie in the finite node‐set \(L^n_\ell(\beta)\).
-\end{itemize}
-Equivalently, these are precisely the paths that “traverse” the tree \(T_n(\beta)\).  This completes the proof.
+\noindent\textbf{Step 3: Identification with \(\nu_n\).}\\
+Applying this result to \(\lambda=\nu_n=\Law(\gamma_X)\) and noting that 
+\(\nu_n^{\le t}=(\pi^{\le t})_*\,\nu_n\) is its marginal, we obtain the desired family 
+\(\{\nu_n[\cdot\mid\beta]^{\le t}\}_{\beta}\) and the disintegration of \(\nu_n\).  
 \end{proof}
 
+\begin{proof}[Proof 2.3.1 (Measurability of $T_n$ and $C_n$)]
+Let
+\[
+E_{\rm past} \;=\; C\bigl(\mathcal I_n^{\le t_n},\R^d\bigr),
+\qquad
+E_{\rm full} \;=\; C\bigl(\mathcal I_n,\R^d\bigr),
+\]
+each equipped with its Borel σ–algebra $\B(E_{\rm past})$ and $\B(E_{\rm full})$ (they are Polish spaces under the uniform norm).  We view
+\[
+T_n: E_{\rm past}\;\longrightarrow\;2^{\,\R\times\R^d},
+\qquad
+C_n: E_{\rm past}\;\longrightarrow\;2^{\,E_{\rm full}}
+\]
+as set‐valued maps.  To speak of their measurability, we equip $2^{E_{\rm full}}$ with the Effros σ–algebra
+\[
+\E
+\;=\;
+\sigma\bigl\{\Hit(U):U\in\B(E_{\rm full})\bigr\},
+\quad
+\Hit(U)=\{\,A\subset E_{\rm full}:A\cap U\neq\varnothing\}.
+\]
+
+\medskip\noindent
+\textbf{(i) Measurability of $T_n$.}  Recall
+\[
+T_n(\beta)
+=\bigcup_{\ell=0}^n\{\,t_{n+\ell}\}\times L^n_\ell(\beta),
+\]
+where
+\[
+L^n_\ell(\beta)
+=\Bigl\{\,
+Y(t_n;\beta)
++\sum_{j=1}^\ell \zeta_{k_j}(\beta)
+\;:\; k_j\in\{1,\dots,n\}
+\Bigr\},
+\]
+and each map $\beta\mapsto \zeta_k(\beta)=\beta(t_k)-\beta(t_{k-1})$ is continuous $E_{\rm past}\to\R^d$.  Hence each finite set $L^n_\ell(\beta)$ is the image of a finite union of continuous maps, and
+\[
+\beta\;\mapsto\;L^n_\ell(\beta)
+\]
+is Borel‐measurable into the space of finite subsets of $\R^d$.  Since
+\[
+T_n(\beta)=\bigcup_{\ell}\bigl\{t_{n+\ell}\bigr\}\times L^n_\ell(\beta),
+\]
+it follows that for any open $U\subset\R\times\R^d$,
+\[
+\{\beta: T_n(\beta)\cap U\neq\varnothing\}
+=\bigcup_{\ell=0}^n
+\{\beta: L^n_\ell(\beta)\cap \Pi_\ell(U)\neq\varnothing\},
+\]
+where $\Pi_\ell(U)=\{x:(\,t_{n+\ell},x)\in U\}$ is open in $\R^d$.  Each event on the right is Borel in $\beta$, so $T_n$ is measurable into $(2^{\R\times\R^d},\E)$.
+
+\medskip\noindent
+\textbf{(ii) Measurability of $C_n$.}  Recall
+\[
+C_n(\beta)
+=\Bigl\{\gamma\in E_{\rm full}:\;
+\pi^{\le t_n}(\gamma)=\beta,\;
+\gamma(t_{n+\ell})\in L^n_\ell(\beta)\ \forall\,\ell\Bigr\},
+\]
+where $\pi^{\le t_n}:E_{\rm full}\to E_{\rm past}$ is the continuous truncation map.  For any open $V\subset E_{\rm full}$,
+\[
+\{\beta: C_n(\beta)\cap V\neq\varnothing\}
+=\{\beta:\exists\gamma\in V,\;
+\pi^{\le t_n}(\gamma)=\beta,\;
+\gamma(t_{n+\ell})\in L^n_\ell(\beta)\ \forall\ell\}.
+\]
+But the relation 
+\(\{(\beta,\gamma):\pi^{\le t_n}(\gamma)=\beta,\ \gamma(t_{n+\ell})\in L^n_\ell(\beta)\ \forall\ell\}\)
+is Borel in the product $E_{\rm past}\times E_{\rm full}$, since
+- $(\beta,\gamma)\mapsto\pi^{\le t_n}(\gamma)-\beta$ is continuous,
+- $(\beta,\gamma)\mapsto\gamma(t_{n+\ell})$ is continuous,
+- $(\beta,\gamma)\mapsto L^n_\ell(\beta)$ is Borel‐measurable as above,
+- and the condition “$\gamma(t_{n+\ell})\in L^n_\ell(\beta)$” is a finite union of graphs of Borel maps.
+
+Projecting this Borel relation onto $E_{\rm past}$ (i.e.\ asking “there exists $\gamma\in V$ …”) yields a Borel set.  Hence
+\(\{\beta: C_n(\beta)\cap V\neq\emptyset\}\in\B(E_{\rm past})\),
+and $C_n$ is Effros‐measurable.  
+\end{proof}
+
+\begin{proof}[Proof 2.3.2 (From conditional support $=1$ to unconditional probability $=1$)]
+Let $\nu_n$ be the law of $\gamma_X$ on $E_{\rm full}$ and $\nu_n^{\le t_n}$ its marginal on $E_{\rm past}$.  By disintegration (Theorem 2.1),
+\[
+\forall\;E\in\B(E_{\rm full}),\quad
+\nu_n(E)
+=\int_{E_{\rm past}}
+\nu_n\bigl(E\mid\beta\bigr)\;\nu_n^{\le t_n}(d\beta).
+\]
+Define the joint event
+\[
+A
+=\bigl\{(\beta,\gamma)\in E_{\rm past}\times E_{\rm full}:
+\gamma\in C_n(\beta)\bigr\}.
+\]
+Since $C_n$ is measurable (Proof 2.3.1), $A\in\B(E_{\rm past}\times E_{\rm full})$.  By Proposition 2.2,
+\[
+\forall\,\beta,\qquad
+\nu_n\bigl(C_n(\beta)\mid\beta\bigr)
+=1,
+\]
+so
+\[
+\nu_n(A)
+=\int_{E_{\rm past}}
+\nu_n\bigl(\{\gamma:\,\gamma\in C_n(\beta)\}\mid\beta\bigr)
+\,\nu_n^{\le t_n}(d\beta)
+=\int 1\;d\nu_n^{\le t_n}
+=1.
+\]
+But under the coupling
+\(\beta=\gamma_X^{\le t_n}\), \(\gamma=\gamma_X\),
+the event $A$ is exactly \(\{\gamma_X\in C_X\}\).  Hence
+\[
+\PP(\gamma_X\in C_X)
+=\nu_n(A)
+=1,
+\]
+as required.
+\end{proof}
+
+\begin{proof}[Proof 2.3.2 (From conditional support $=1$ to unconditional probability $=1$)]
+Let
+\[
+E_{\rm past}=C(\mathcal I_n^{\le t_n},\R^d), 
+\quad
+E_{\rm full}=C(\mathcal I_n,\R^d),
+\]
+and denote by $\nu_n$ the law of $\gamma_X$ on $E_{\rm full}$ and by $\nu_n^{\le t_n}$ its marginal on $E_{\rm past}$.  By disintegration (Theorem 2.1), for any $E\in\B(E_{\rm full})$,
+\[
+\nu_n(E)
+=\int_{E_{\rm past}}
+\nu_n\bigl(E\mid\beta\bigr)\,\nu_n^{\le t_n}(d\beta).
+\]
+
+\medskip\noindent
+\textbf{(i) Measurability of the joint event.}  
+From Proof 2.3.1 we know
+\[
+C_n:E_{\rm past}\to 2^{E_{\rm full}}
+\]
+is measurable into the Effros‐σ–algebra.  Hence the set
+\[
+A
+=\bigl\{(\beta,\gamma)\in E_{\rm past}\times E_{\rm full}:
+\gamma\in C_n(\beta)\bigr\}
+\]
+lies in the product σ–algebra
+\(\B(E_{\rm past})\otimes\B(E_{\rm full})\).
+
+\medskip\noindent
+\textbf{(ii) Conditional support is one.}  
+By Proposition 2.2,
+\[
+\forall\,\beta\in E_{\rm past},\qquad
+\nu_n\bigl(\{\gamma:\,(\beta,\gamma)\in A\}\,\bigm|\,\beta\bigr)
+=\nu_n\bigl(C_n(\beta)\mid\beta\bigr)
+=1.
+\]
+
+\medskip\noindent
+\textbf{(iii) Unconditional probability equals one.}  
+Apply disintegration to the indicator of $A$:
+\[
+\nu_n(A)
+=\int_{E_{\rm past}}
+\nu_n\bigl(\{\gamma:(\beta,\gamma)\in A\}\mid\beta\bigr)
+\,\nu_n^{\le t_n}(d\beta)
+=\int 1\,d\nu_n^{\le t_n}
+=1.
+\]
+Finally, under the canonical coupling
+\(\beta=\gamma_X^{\le t_n}\), \(\gamma=\gamma_X\),
+the event $A$ is exactly $\{\gamma_X\in C_X\}$.  Therefore
+\[
+\PP\bigl(\gamma_X\in C_X\bigr)
+=\nu_n(A)
+=1,
+\]
+as claimed.
+\end{proof}
