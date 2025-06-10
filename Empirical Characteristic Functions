@@ -1,200 +1,82 @@
-\documentclass[11pt]{article}
-\usepackage{amsmath,amsfonts,amsthm,enumitem}
-\usepackage{hyperref}
-
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{lemma}[theorem]{Lemma}
-
-\numberwithin{equation}{section}
-
-\begin{document}
-
-\title{An Extension of the Cameron–Martin Theorem}
-\author{}
-\date{}
-\maketitle
-
-\section{Setup and notation}
-
-Let $(\Omega,A,W)$ be the classical Wiener space over $[0,T]$, with canonical process $Y_t(\omega)=\omega(t)$ and its natural filtration $\{\F_t\}_{0\le t\le T}$.  Let 
-\[
-  b\colon [0,T]\times\R^d\;\longrightarrow\;\R^d
-\]
-be a bounded, measurable drift such that the SDE
-\[
-  dX_t \;=\; b\bigl(t,X_t\bigr)\,dt \;+\; dY_t,\qquad X_0=0,
-\]
-admits a unique strong solution.  Denote by 
-\[
-  R\colon \Omega\;\longrightarrow\;\Omega
-\]
-the \emph{solution map} characterized by 
-\[
-  X_t(\omega)\;=\; \bigl(R(\omega)\bigr)(t)
-  \quad\text{$W$–a.s.}
-\]
-Define the stochastic exponent
-\begin{equation}\label{eq:Zb}
-  Z^b(\omega)(t)
-  \;=\;
-  \int_0^t b\bigl(s,\omega(s)\bigr)\,d\omega(s)
-  \;-\;\frac12\int_0^t \bigl\lvert b(s,\omega(s))\bigr\rvert^2\,ds,
-\end{equation}
-which is a true martingale under $W$.
-
-\begin{theorem}
-Under the above hypotheses, the following hold:
-\begin{enumerate}[label=(\roman*)]
-  \item \textbf{(Push–forward law)}  
-    $$
-      R_*W
-      \;=\;
-      \Law(X)
-      \quad\text{on }(\Omega,A).
-    $$
-  \item \textbf{(Girsanov density)}  
-    For each $t\in[0,T]$, $R_*W\ll W$ on $\F_t$ and
-    \[
-      \frac{d\bigl(R_*W\bigr)}{dW}\Bigm|\_{\F_t}
-      (\omega)
-      \;=\;
-      \exp\!\bigl(Z^b(\omega)(t)\bigr).
-    \]
-  \item \textbf{(Inverse–map density)}  
-    Define
-    \[
-      T\colon\Omega\;\longrightarrow\;\Omega,
-      \qquad
-      \bigl(T(\omega)\bigr)(t)
-      = \omega(t)
-      \;+\;
-      \int_0^t b\bigl(s,\omega(s)\bigr)\,ds.
-    \]
-    Then $T=R^{-1}$ $W$–a.s., and for each $t$,
-    \[
-      \frac{d\bigl(T_*W\bigr)}{dW}\Bigm|\_{\F_t}
-      (\omega)
-      \;=\;
-      \exp\!\bigl(-\,Z^b(\omega)(t)\bigr).
-    \]
-\end{enumerate}
-\end{theorem}
-
-\begin{lemma}[Invertibility of Radon–Nikodym derivatives]
-\label{lem:invert-RN}
-Let $(\Omega,\F)$ be a measurable space and $\mu,\nu$ two $\sigma$–finite measures with $\nu\ll\mu$.  Write
-\[
-  L \;=\;\frac{d\nu}{d\mu}.
-\]
-Then $\mu\ll\nu$, and
-\[
-  \frac{d\mu}{d\nu}
-  \;=\;
-  \frac1L
-  \quad
-  \text{$\nu$–a.s.}
-\]
-\end{lemma}
-
 \begin{proof}
-Since $\nu\ll\mu$, whenever $\nu(E)=0$ we have
+Fix a past‐trajectory 
+\(\beta\in \supp\bigl(\nu_n^{\le t_n}\bigr)\).  By construction, once the path up to time \(t_n\) is fixed to be \(\beta\), the \emph{only} remaining randomness in the future evolution of \(X\) on 
+\(\{t_{n+1},\dots,t_{2n}\}\) 
+comes from the increments
 \[
-  0
-  \;=\;
-  \int_E L\,d\mu
-  \;\Longrightarrow\;
-  \mu\bigl(E\cap\{L>0\}\bigr)=0.
+\zeta_{n+1},\,\zeta_{n+2},\;\dots,\;\zeta_{2n},
 \]
-On the other hand, on the set $\{L=0\}$ we see immediately
+which under the conditional law
+\(\nu_n[\cdot\mid\gamma_X^{\le t_n}=\beta]\)
+are i.i.d.\ with the empirical distribution
 \[
-  \nu\bigl(E\cap\{L=0\}\bigr)
-  = \int_{E\cap\{L=0\}} L\,d\mu
-  = 0
-  \quad\Longrightarrow\quad
-  E\cap\{L=0\}
-  \;\text{is }\mu\text{–null.}
+\widehat m_n
+=\frac1n\sum_{k=1}^n\delta_{\zeta_k(\beta)}.
 \]
-Hence $\mu(E)=0$ whenever $\nu(E)=0$, so $\mu\ll\nu$.  Moreover, by the standard uniqueness of Radon–Nikodym derivatives, the function $1/L$ on $\{L>0\}$ gives
+In particular each \(\zeta_{n+\ell}\) takes values in the finite set 
+\(\{\zeta_1(\beta),\dots,\zeta_n(\beta)\}\subset\R^d\).
+
+\medskip
+\noindent\textbf{Step 1: Support of the increments.}\\
 \[
-  \int_E \frac1L\,d\nu
-  = \int_E \frac{1}{L} \,L\,d\mu
-  = \mu(E),
-  \qquad
-  \forall E\subset\{L>0\},
+\Supp\bigl(\Law(\zeta_{n+1},\dots,\zeta_{2n}\mid\beta)\bigr)
+\;=\;
+\bigl\{\zeta_{k_1}(\beta)\bigr\}_{k_1=1}^n
+\times\cdots\times
+\bigl\{\zeta_{k_n}(\beta)\bigr\}_{k_n=1}^n,
 \]
-showing $d\mu/d\nu=1/L$ $\nu$–a.s.
+a finite subset of \((\R^d)^n\).
+
+\medskip
+\noindent\textbf{Step 2: Construction of the node‐sets.}\\
+Write \(Y(t_k)=\log X(t_k)\).  Since the update
+\[
+Y(t_{n+\ell})
+=Y(t_n;\beta)
++\sum_{j=1}^\ell \zeta_{n+j}
+\]
+is deterministic given the increments, the only possible states at time \(t_{n+\ell}\) are
+\[
+Y(t_n;\beta)
++\sum_{j=1}^\ell \zeta_{k_j}(\beta),
+\quad
+k_j\in\{1,\ldots,n\}.
+\]
+Define, for each \(\ell=0,1,\dots,n\),
+\[
+L^n_\ell(\beta)
+\;=\;
+\Bigl\{\,Y(t_n;\beta)
++\sum_{j=1}^\ell \zeta_{k_j}(\beta)
+\;\Bigm|\;
+k_j\in\{1,\dots,n\}
+\Bigr\}.
+\]
+By construction \(L^n_0(\beta)=\{Y(t_n;\beta)\}\) and each \(L^n_\ell(\beta)\) is a \emph{finite} subset of \(\R^d\).
+
+\medskip
+\noindent\textbf{Step 3: The \(n\)‐nomial tree.}\\
+Set
+\[
+T_n(\beta)
+=\bigcup_{\ell=0}^n
+\bigl\{\,\bigl(t_{n+\ell},\,x\bigr)\;:\;x\in L^n_\ell(\beta)\bigr\}.
+\]
+Then \(T_n(\beta)\) is a discrete subset of \([t_n,t_{2n}]\times\R^d\) whose nodes form an \(n\)‐nomial tree of height \(n\), rooted at \((t_n,Y(t_n;\beta))\).
+
+\medskip
+\noindent\textbf{Step 4: Support of the conditional law.}\\
+Since the future path \(\gamma_X\bigl|_{[t_n,t_{2n}]}\) is a deterministic function of the increments \((\zeta_{n+1},\dots,\zeta_{2n})\), the support of
+\[
+\nu_n\bigl[\cdot\mid\gamma_X^{\le t_n}=\beta\bigr]
+\;=\;
+\Law\bigl(\gamma_X\mid\beta\bigr)
+\]
+is exactly the set of full paths which
+\begin{itemize}
+  \item coincide with \(\beta\) on \([t_0,t_n]\), and
+  \item at each future date \(t_{n+\ell}\) lie in the finite node‐set \(L^n_\ell(\beta)\).
+\end{itemize}
+Equivalently, these are precisely the paths that “traverse” the tree \(T_n(\beta)\).  This completes the proof.
 \end{proof}
 
-\begin{proof}[Proof of Theorem]
-We divide the argument into three parts.
-
-\medskip
-
-\noindent\textbf{(i) Push–forward law.}
-By definition of $R$ and of the law of the solution,
-\[
-  R_*W(E)
-  \;=\;
-  W\bigl(\{\omega:R(\omega)\in E\}\bigr)
-  \;=\;
-  \P\bigl(X\in E\bigr)
-  \;=\;
-  \Law(X)(E),
-  \quad
-  \forall E\in A.
-\]
-
-\medskip
-
-\noindent\textbf{(ii) Girsanov density.}
-This is the classical Girsanov theorem on the Wiener space (see, \emph{e.g.}, Taylor’s PDE notes).  One shows
-\[
-  R_*W\ll W
-  \quad\text{on }\F_t,
-  \qquad
-  \frac{d(R_*W)}{dW}\Bigm|\_{\F_t}
-  = \exp\!\bigl(Z^b(\cdot)(t)\bigr),
-\]
-where $Z^b(\omega)(t)$ is given in \eqref{eq:Zb}.  The proof proceeds by either the Trotter product formula or by Itô’s formula and uniqueness of the associated heat semigroup.
-
-\medskip
-
-\noindent\textbf{(iii) Inverse–map density.}
-Observe that by construction
-\[
-  T\circ R \;=\;\mathrm{id}
-  \quad\text{and}\quad
-  R\circ T \;=\;\mathrm{id}
-  \quad
-  W\text{–a.s.},
-\]
-so $T=R^{-1}$ almost surely.  From part (ii) we know
-\[
-  \nu \;:=\; R_*W
-  \quad\text{and}\quad
-  L(\omega)
-  = \frac{d\nu}{dW}\Bigm|\_{\F_t}(\omega)
-  = \exp\!\bigl(Z^b(\omega)(t)\bigr).
-\]
-Hence by Lemma~\ref{lem:invert-RN}, $W\ll\nu$ as well and
-\[
-  \frac{dW}{d\nu}\Bigm|\_{\F_t}
-  = \frac1L \;=\;\exp\!\bigl(-Z^b(\omega)(t)\bigr).
-\]
-But since $\nu=R_*W$, pulling back along $R^{-1}=T$ gives
-\[
-  \frac{d\bigl(T_*W\bigr)}{dW}\Bigm|\_{\F_t}
-  (\omega)
-  = \frac{dW}{d(R_*W)}\Bigm|\_{\F_t}\bigl(T(\omega)\bigr)
-  = \exp\!\bigl(-Z^b(T(\omega))(t)\bigr).
-\]
-Finally, a straightforward Itô–calculation shows
-\[
-  Z^b\bigl(T(\omega)\bigr)(t)
-  = Z^b(\omega)(t),
-\]
-since $d\bigl(T(\omega)\bigr)_s = d\omega(s) + b\bigl(s,\omega(s)\bigr)\,ds$
-and the extra drift term cancels out in the stochastic exponent.  This completes the proof of (iii).
-\end{proof}
-
-\end{document}
