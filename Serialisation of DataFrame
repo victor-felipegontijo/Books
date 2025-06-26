@@ -1,99 +1,107 @@
-using System;
-using System.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Microsoft.Data.Analysis;
+import os
 
-public class DataFrameJsonConverter : JsonConverter<DataFrame>
-{
-    public override DataFrame ReadJson(JsonReader reader, Type objectType, DataFrame existingValue, bool hasExistingValue, JsonSerializer serializer)
-    {
-        // Load the entire JSON object
-        var root = JObject.Load(reader);
-        var df = new DataFrame();
+# LaTeX content for the pricing framework introduction
+tex_content = r"""
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\title{Introduction to the Monte Carlo Pricing Framework}
+\author{Co-Development Team}
+\date{\today}
 
-        // Drill into your "Data" → "Columns" array
-        var columns = root["Data"]?["Columns"] as JArray;
-        if (columns == null)
-            throw new JsonSerializationException("Expected Data.Columns array");
+\begin{document}
+\maketitle
 
-        foreach (var colToken in columns)
-        {
-            var name = colToken.Value<string>("Name");
-            var typeName = colToken.Value<string>("DataType");
-            var values = colToken["Values"] as JArray;
+\section{Overview}
+This document provides a high-level introduction to the Monte Carlo (MC) pricing framework used within the Elib and Keops libraries. It outlines the workflow from pricing request initialization to result computation.
 
-            if (name == null || typeName == null || values == null)
-                throw new JsonSerializationException("Column missing Name, DataType, or Values");
+\section{General Workflow}
+Pricing requests are handled through \texttt{Container (KeopsDomain)} objects, which encapsulate all necessary entities for a pricing request:
+\begin{itemize}
+  \item Product definition
+  \item Underlying assets
+  \item Fixing dates
+  \item Pricing model
+  \item Pricing algorithm
+  \item Supplementary indicators
+\end{itemize}
+Once the \texttt{Container} is loaded, pricing is initiated via the \texttt{PricingCommandRawData} entity, specialized into a concrete pricer derived from \texttt{PricingEngineBase}.
 
-            DataFrameColumn column;
+\section{Monte Carlo Engine and \texttt{ComputeResults}}
+The \texttt{TextualOptionMonteCarloPricer}, derived from \texttt{PricingEngineBase}, implements the \texttt{ComputeResults} method. Within this method, three main \texttt{ElibObject} instances are created:
+\begin{enumerate}
+  \item \texttt{product} via \texttt{CreateProduct(...)}
+  \item \texttt{transition} via \texttt{CreateTransition(...)}
+  \item \texttt{pricer} via \texttt{CreatePricer(..., product, transition, ...)}
+\end{enumerate}
+Pricing results are obtained by calling:
+\begin{verbatim}
+res = Price(..., pricer, ...)
+\end{verbatim}
 
-            switch (typeName)
-            {
-                case "Int32":
-                    {
-                        var intCol = new Int32DataFrameColumn(name, values.Count);
-                        for (long i = 0; i < values.Count; i++)
-                        {
-                            var tok = values[(int)i];
-                            intCol[i] = tok.Type == JTokenType.Null
-                                ? (int?)null
-                                : tok.Value<int>();
-                        }
-                        column = intCol;
-                        break;
-                    }
-                case "Double":
-                    {
-                        var dblCol = new DoubleDataFrameColumn(name, values.Count);
-                        for (long i = 0; i < values.Count; i++)
-                        {
-                            var tok = values[(int)i];
-                            dblCol[i] = tok.Type == JTokenType.Null
-                                ? (double?)null
-                                : tok.Value<double>();
-                        }
-                        column = dblCol;
-                        break;
-                    }
-                case "DateTime":
-                    {
-                        // PrimitiveDataFrameColumn<T> works for DateTime
-                        var dtCol = new PrimitiveDataFrameColumn<DateTime?>(name, values.Count);
-                        for (long i = 0; i < values.Count; i++)
-                        {
-                            var tok = values[(int)i];
-                            dtCol[i] = tok.Type == JTokenType.Null
-                                ? (DateTime?)null
-                                : tok.Value<DateTime>();
-                        }
-                        column = dtCol;
-                        break;
-                    }
-                default:
-                    {
-                        // Fallback to string
-                        var strCol = new StringDataFrameColumn(name, values.Count);
-                        for (long i = 0; i < values.Count; i++)
-                        {
-                            var tok = values[(int)i];
-                            strCol[i] = tok.Type == JTokenType.Null
-                                ? null
-                                : tok.ToString();
-                        }
-                        column = strCol;
-                        break;
-                    }
-            }
+\section{Elib Object Lifecycle}
+\subsection{Transition Creation}
+The \texttt{MC-Optimized-Transition} object is created by the factory implementation \texttt{TransitionFactoryImpl}, which allocates and initializes memory based on parameters from \texttt{tabValues}.
 
-            df.Columns.Add(column);
-        }
+\subsection{Pricer Creation}
+Similarly, the \texttt{MC-Generic-Pricer} object is instantiated by \texttt{PricerFactoryImpl}, returning a shared pointer to \texttt{MC-Generic-Pricer}.
 
-        return df;
-    }
+\subsection{Pricing Execution}
+The call to \texttt{ElibM(Pricer::Price)} recovers the pricer pointer and loads pricing parameters (\texttt{NBSimulations}, \texttt{WienerPathGenerationMethod}, \texttt{MonteCarloScheme}, etc.) before executing \texttt{pricer->price()}.
 
-    public override void WriteJson(JsonWriter writer, DataFrame value, JsonSerializer serializer)
-    {
-        throw new NotImplementedException("Serialization not implemented");
-    }
-}
+\section{Scenario Computation with \texttt{MetaPricer}}
+The \texttt{pricer} is passed to \texttt{MetaPricer::computeScenarii}, which:
+\begin{enumerate}
+  \item Executes a central scenario for price and ``smart Greeks''
+  \item Executes perturbed scenarios for bumped Greeks
+\end{enumerate}
+Results are returned as a vector of \texttt{PricingResultsWithGreeks}.
+
+\section{Core Monte Carlo Solver}
+\subsection{Initialization}
+The \texttt{MC-Solver} is initialized with:
+\begin{itemize}
+  \item \texttt{MC-Trajectory} loaded with past spot values (\texttt{initializePastFixings})
+  \item \texttt{m-volGenerator} in \texttt{MC-Transition} loaded with \texttt{IBrownianPathGenerator} instances
+\end{itemize}
+
+\subsection{Execution Flow}
+\begin{enumerate}
+  \item \texttt{SetDesiredNumberOfTasks}: partition tasks among threads
+  \item \texttt{setGenerator}: create \texttt{PerThreadData} per thread
+  \item \texttt{Price-portfolio}: launch \texttt{Loop} in parallel and aggregate \texttt{m-PortfolioResults}
+  \item \texttt{Loop}: for each sub-block of trajectories:
+    \begin{itemize}
+      \item \texttt{GenerateAleasAndMeasureWeight}: load uniform random variables via \texttt{MC-AleasGenerator}
+      \item \texttt{SimulateOnce}: construct trajectories and compute payoffs via \texttt{ComputeEulerTrajectories} or \texttt{computeAmericanPrice}
+    \end{itemize}
+\end{enumerate}
+
+\section{Path-Dependent and American Features}
+Payoff-modification events include early-exercise, callable, barriers, conditional coupons, autocall barriers, etc. Conditional revaluations use the Longstaff-Schwartz algorithm, implemented via \texttt{ContinuationValue} features and regressions in \texttt{MC-Solver::precomputeContinuationValues}.
+
+\section{Data Structures}
+\texttt{AmericanFeature} instances store observation dates, quantitative data (\texttt{inValuesOnTrajectory}), and reference/involved contracts. \texttt{DRVContinuationValue} wraps regression logic for conditional payoffs.
+
+\section{Call Stack Overview}
+\begin{verbatim}
+TextualOptionMonteCarloPricer::ComputeResults
+  -> ElibM(Pricer::Price)
+    -> MetaPricer::computeScenarii
+      -> MC-Generic-Pricer::price
+        -> MC-Solver::Price-portfolio
+          -> MC-Solver::Loop
+            -> MC-Solver::SimulateOnce
+\end{verbatim}
+
+\end{document}
+"""
+
+# Write the LaTeX file to the notebook environment
+file_path = '/mnt/data/pricing_framework_intro.tex'
+with open(file_path, 'w') as f:
+    f.write(tex_content)
+
+file_path
