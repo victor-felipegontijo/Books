@@ -1,8 +1,24 @@
-VSCode User Settings (JSON) 
+YourProject/
+├─ main.tex
+├─ references.bib
+├─ Sections/
+│  └─ intro.tex
+├─ Build/                # generated: intermediates
+├─ Output/               # generated: final PDFs
+├─ BuildSimple.ps1       # pdflatex (single pass)
+├─ BuildWithBib.ps1      # pdflatex → bibtex → pdflatex ×2
+├─ clean.ps1             # removes Build/ and (optionally) Output/
+└─ .vscode/
+   └─ settings.json      # LaTeX Workshop recipes/tools (BibTeX) + defaults
+
+
+-----------------------------------------------------------
+
+VSCode Settings (JSON) 
 
 {
   "latex-workshop.latex.autoBuild.run": "never",
-
+  "latex-workshop.latex.recipe.default": "pdflatex (simple)",
   "latex-workshop.latex.recipes": [
     { "name": "pdflatex (simple)", "tools": ["build-simple"] },
     { "name": "pdflatex (with bibliography — BibTeX)", "tools": ["build-with-bib"] }
@@ -78,6 +94,96 @@ if (Test-Path (Join-Path $buildDir "$mainFile.synctex.gz")) {
 }
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $outputDir "Sections")
 Write-Host "`nFinished Compiling Routine !!"
+-----------------------------------------------------------
+
+CleanBuild.ps1
+
+param(
+  [string]$BuildDir = "Build",
+  [string]$OutDir   = "Output",
+
+  # Keep PDFs (and .synctex.gz) by default; use -All to wipe everything in Output/
+  [switch]$All,
+
+  # Show what would be deleted without actually deleting
+  [switch]$DryRun,
+
+  # Recreate empty Build/ and Output/ after cleaning
+  [switch]$Recreate
+)
+
+$ErrorActionPreference = "Stop"
+
+function Remove-Path {
+  param([string]$Path)
+  if (Test-Path -LiteralPath $Path) {
+    if ($DryRun) {
+      Write-Host "[dry-run] Would remove: $Path"
+    } else {
+      Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
+      Write-Host "Removed: $Path"
+    }
+  }
+}
+
+# 1) Remove the Build/ directory completely (all intermediates live here)
+if (Test-Path -LiteralPath $BuildDir) {
+  Remove-Path -Path $BuildDir
+} else {
+  Write-Host "Build directory not found ($BuildDir) — nothing to do there."
+}
+
+# 2) Clean the Output/ directory
+if (Test-Path -LiteralPath $OutDir) {
+  if ($All) {
+    # Wipe everything
+    Get-ChildItem -LiteralPath $OutDir -Force -Recurse | ForEach-Object {
+      if ($DryRun) {
+        Write-Host "[dry-run] Would remove: $($_.FullName)"
+      } else {
+        Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+      }
+    }
+    Write-Host "Output cleared (including PDFs)."
+  } else {
+    # Keep PDFs and .synctex.gz, remove everything else (files + stray subfolders)
+    Get-ChildItem -LiteralPath $OutDir -Recurse -Force | ForEach-Object {
+      if ($_.PSIsContainer) {
+        # remove non-root folders (e.g., Output/Sections)
+        if ($_.FullName -ne (Resolve-Path $OutDir)) {
+          Remove-Path -Path $_.FullName
+        }
+      } else {
+        $name = $_.Name
+        $keep =
+          ($name -match '\.pdf$') -or
+          ($name -match '\.synctex\.gz$')
+        if (-not $keep) {
+          if ($DryRun) {
+            Write-Host "[dry-run] Would remove: $($_.FullName)"
+          } else {
+            Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+          }
+        }
+      }
+    }
+    Write-Host "Output cleaned (PDFs and .synctex.gz preserved)."
+  }
+} else {
+  Write-Host "Output directory not found ($OutDir) — skipping."
+}
+
+# 3) Optionally recreate empty directories
+if ($Recreate) {
+  if ($DryRun) {
+    Write-Host "[dry-run] Would recreate: $BuildDir, $OutDir"
+  } else {
+    New-Item -ItemType Directory -Path $BuildDir,$OutDir -Force | Out-Null
+    Write-Host "Recreated: $BuildDir, $OutDir"
+  }
+}
+
+Write-Host "✔ Clean completed."
 -----------------------------------------------------------
 
 main.tex
