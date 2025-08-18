@@ -46,9 +46,7 @@ Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $outputDir 
 Write-Host "`n Finished Compiling Routine !! Check if there are errors in the log above."
 
 -----------------------------------------------------------
-
 # BuildWithBib.ps1  — pdflatex -> bibtex -> pdflatex x2
-
 $mainFile  = "main"
 $buildDir  = "Build"
 $outputDir = "Output"
@@ -56,39 +54,30 @@ $ErrorActionPreference = "Stop"
 
 New-Item -ItemType Directory -Path $buildDir,$outputDir -Force | Out-Null
 
-# 1) First LaTeX pass (creates main.aux in Build/)
 Write-Host "`nRunning pdflatex (first pass)..."
 pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
   -output-directory="$buildDir" "$($mainFile).tex"
 if ($LASTEXITCODE -ne 0) { throw "pdflatex (first pass) failed." }
 
-# 2) BibTeX must run where main.aux lives (Build/)
-Write-Host "`nRunning bibtex..."
-Push-Location $buildDir
-bibtex "$mainFile"
-$code = $LASTEXITCODE
-Pop-Location
-if ($code -ne 0) { throw "bibtex failed." }
+Write-Host "`nRunning bibtex on Build/main..."
+bibtex (Join-Path $buildDir $mainFile)
+if ($LASTEXITCODE -ne 0) { throw "bibtex failed. See Build\${mainFile}.blg" }
 
-# 3) Second LaTeX pass
 Write-Host "`nRunning pdflatex (second pass)..."
 pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
   -output-directory="$buildDir" "$($mainFile).tex" | Out-Null
 
-# 4) Third LaTeX pass to resolve cross-refs
 Write-Host "`nRunning pdflatex (third pass)..."
 pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
   -output-directory="$buildDir" "$($mainFile).tex"
 
-# 5) Move results to Output/
 Write-Host "`nMoving final PDF to Output/..."
 Move-Item -Force (Join-Path $buildDir "$mainFile.pdf") (Join-Path $outputDir "$mainFile.pdf")
 if (Test-Path (Join-Path $buildDir "$mainFile.synctex.gz")) {
   Move-Item -Force (Join-Path $buildDir "$mainFile.synctex.gz") (Join-Path $outputDir "$mainFile.synctex.gz")
 }
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $outputDir "Sections")
-
-Write-Host "`nFinished Compiling Routine !! Check for errors above."
+Write-Host "`nFinished Compiling Routine !!"
 -----------------------------------------------------------
 
 main.tex
