@@ -50,3 +50,48 @@ if (Test-Path (Join-Path $buildDir "$mainFile.synctex.gz")) {
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $outputDir "Sections")
 
 Write-Host "`n Finished Compiling Routine !! Check if there are errors in the log above."
+
+
+
+# Paths
+$mainFile  = "main"    # name without extension
+$buildDir  = "Build"
+$outputDir = "Output"
+
+$ErrorActionPreference = "Stop"
+
+# Ensure directories exist
+New-Item -ItemType Directory -Path $buildDir,$outputDir -Force | Out-Null
+
+# 1) First LaTeX pass (creates .bcf in Build/)
+Write-Host "`n Running pdflatex (first pass)..."
+pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
+  -output-directory="$buildDir" "$($mainFile).tex"
+if ($LASTEXITCODE -ne 0) { throw "pdflatex (first pass) failed." }
+
+# 2) Biber on the Build directory
+Write-Host "`n Running biber..."
+biber --input-directory "$buildDir" --output-directory "$buildDir" "$mainFile"
+if ($LASTEXITCODE -ne 0) { throw "biber failed." }
+
+# 3) Second LaTeX pass
+Write-Host "`n Running pdflatex (second pass)..."
+pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
+  -output-directory="$buildDir" "$($mainFile).tex" | Out-Null
+
+# 4) Third LaTeX pass to settle refs
+Write-Host "`n Running pdflatex (third pass)..."
+pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
+  -output-directory="$buildDir" "$($mainFile).tex"
+
+# 5) Move final artifacts to Output/
+Write-Host "`n Moving final PDF to output directory..."
+Move-Item -Force (Join-Path $buildDir "$mainFile.pdf")     (Join-Path $outputDir "$mainFile.pdf")
+if (Test-Path (Join-Path $buildDir "$mainFile.synctex.gz")) {
+  Move-Item -Force (Join-Path $buildDir "$mainFile.synctex.gz") (Join-Path $outputDir "$mainFile.synctex.gz")
+}
+
+# Cleanup any stray folder in Output (mirrors your screenshot)
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $outputDir "Sections")
+
+Write-Host "`n Finished Compiling Routine !! Check if there are errors in the log above."
