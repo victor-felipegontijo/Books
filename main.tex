@@ -1,3 +1,28 @@
+{
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "pdflatex (simple)",
+      "tools": ["build-simple"]
+    },
+    {
+      "name": "pdflatex (with bibliography)",
+      "tools": ["build-with-bib"]
+    }
+  ],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "build-simple",
+      "command": "powershell",
+      "args": ["-File", "BuildSimple.ps1"]
+    },
+    {
+      "name": "build-with-bib",
+      "command": "powershell",
+      "args": ["-File", "BuildWithBib.ps1"]
+    }
+  ]
+}
+
 # Paths
 $mainFile  = "main"    # name without extension
 $buildDir  = "Build"   # temp/intermediate files
