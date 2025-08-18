@@ -1,27 +1,15 @@
 VSCode User Settings (JSON) 
 
 {
+  "latex-workshop.latex.autoBuild.run": "never",
+
   "latex-workshop.latex.recipes": [
-    {
-      "name": "pdflatex (simple)",
-      "tools": ["build-simple"]
-    },
-    {
-      "name": "pdflatex (with bibliography)",
-      "tools": ["build-with-bib"]
-    }
+    { "name": "pdflatex (simple)", "tools": ["build-simple"] },
+    { "name": "pdflatex (with bibliography — BibTeX)", "tools": ["build-with-bib"] }
   ],
   "latex-workshop.latex.tools": [
-    {
-      "name": "build-simple",
-      "command": "powershell",
-      "args": ["-File", "BuildSimple.ps1"]
-    },
-    {
-      "name": "build-with-bib",
-      "command": "powershell",
-      "args": ["-File", "BuildWithBib.ps1"]
-    }
+    { "name": "build-simple", "command": "powershell", "args": ["-File", "BuildSimple.ps1"] },
+    { "name": "build-with-bib", "command": "powershell", "args": ["-File", "BuildWithBib.ps1"] }
   ]
 }
 
@@ -59,51 +47,48 @@ Write-Host "`n Finished Compiling Routine !! Check if there are errors in the lo
 
 -----------------------------------------------------------
 
-BuildWithBib.ps1
+# BuildWithBib.ps1  — pdflatex -> bibtex -> pdflatex x2
 
-# Paths
-$mainFile  = "main"    # name without extension
+$mainFile  = "main"
 $buildDir  = "Build"
 $outputDir = "Output"
-
 $ErrorActionPreference = "Stop"
 
-# Ensure directories exist
 New-Item -ItemType Directory -Path $buildDir,$outputDir -Force | Out-Null
 
-# 1) First LaTeX pass (creates .bcf in Build/)
-Write-Host "`n Running pdflatex (first pass)..."
+# 1) First LaTeX pass (creates main.aux in Build/)
+Write-Host "`nRunning pdflatex (first pass)..."
 pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
   -output-directory="$buildDir" "$($mainFile).tex"
 if ($LASTEXITCODE -ne 0) { throw "pdflatex (first pass) failed." }
 
-# 2) Biber on the Build directory
-Write-Host "`n Running biber..."
-biber --input-directory "$buildDir" --output-directory "$buildDir" "$mainFile"
-if ($LASTEXITCODE -ne 0) { throw "biber failed." }
+# 2) BibTeX must run where main.aux lives (Build/)
+Write-Host "`nRunning bibtex..."
+Push-Location $buildDir
+bibtex "$mainFile"
+$code = $LASTEXITCODE
+Pop-Location
+if ($code -ne 0) { throw "bibtex failed." }
 
 # 3) Second LaTeX pass
-Write-Host "`n Running pdflatex (second pass)..."
+Write-Host "`nRunning pdflatex (second pass)..."
 pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
   -output-directory="$buildDir" "$($mainFile).tex" | Out-Null
 
-# 4) Third LaTeX pass to settle refs
-Write-Host "`n Running pdflatex (third pass)..."
+# 4) Third LaTeX pass to resolve cross-refs
+Write-Host "`nRunning pdflatex (third pass)..."
 pdflatex -synctex=1 -interaction=nonstopmode -halt-on-error -file-line-error `
   -output-directory="$buildDir" "$($mainFile).tex"
 
-# 5) Move final artifacts to Output/
-Write-Host "`n Moving final PDF to output directory..."
-Move-Item -Force (Join-Path $buildDir "$mainFile.pdf")     (Join-Path $outputDir "$mainFile.pdf")
+# 5) Move results to Output/
+Write-Host "`nMoving final PDF to Output/..."
+Move-Item -Force (Join-Path $buildDir "$mainFile.pdf") (Join-Path $outputDir "$mainFile.pdf")
 if (Test-Path (Join-Path $buildDir "$mainFile.synctex.gz")) {
   Move-Item -Force (Join-Path $buildDir "$mainFile.synctex.gz") (Join-Path $outputDir "$mainFile.synctex.gz")
 }
-
-# Cleanup any stray folder in Output (mirrors your screenshot)
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $outputDir "Sections")
 
-Write-Host "`n Finished Compiling Routine !! Check if there are errors in the log above."
-
+Write-Host "`nFinished Compiling Routine !! Check for errors above."
 -----------------------------------------------------------
 
 main.tex
@@ -119,22 +104,20 @@ main.tex
 \geometry{margin=1in}
 
 \usepackage{amsmath,amssymb}
-\usepackage{csquotes}
-\usepackage[backend=biber,style=authoryear,maxcitenames=2,uniquename=false]{biblatex}
-\addbibresource{references.bib}
+\usepackage[authoryear]{natbib} % <-- BibTeX + natbib
 
-\title{Dummy Build: Spinors on Riemann Surfaces}
+\title{Dummy Build: Spinors on Riemann Surfaces (BibTeX)}
 \author{Test Document}
 \date{\today}
 
 \begin{document}
 \maketitle
 
-On a closed Riemann surface $(\Sigma,g)$, a (complex) spin structure can be described as a square root $K^{1/2}$ of the canonical bundle $K$, and spinor fields identify with sections of $S \cong K^{1/2} \oplus K^{-1/2}$. With respect to the complex structure, the geometric Dirac operator $D$ splits as $\sqrt{2}\,(\bar\partial + \bar\partial^{\!*})$, sending sections of $K^{1/2}$ to $K^{-1/2}$ and vice versa; its kernel thus detects holomorphic (and anti-holomorphic) spinors and is controlled by Riemann–Roch. The index of the chiral Dirac operator is a topological invariant determined by the Atiyah–Singer index theorem and is closely tied to the Euler characteristic of $\Sigma$, reflecting how analytic data of $D$ encodes global geometry \parencite{atiyah-singer-1968,friedrich-2000}. Classical references develop this dictionary in detail and, for example, show that a genus $g$ surface admits exactly $2^{2g}$ spin structures and relate harmonic spinors to the complex geometry of $K^{1/2}$ \parencite{lawson-michelsohn-1989}.
+On a closed Riemann surface $(\Sigma,g)$, a spin structure can be encoded by a square root $K^{1/2}$ of the canonical bundle $K$, so that spinor fields identify with sections of $S \cong K^{1/2} \oplus K^{-1/2}$. With respect to the complex structure, the geometric Dirac operator $D$ decomposes as $\sqrt{2}\,(\bar\partial + \bar\partial^{\!*})$, interchanging $K^{1/2}$ and $K^{-1/2}$. Its kernel measures holomorphic and anti-holomorphic spinors and is constrained by Riemann–Roch, while its index is determined topologically by the Atiyah–Singer theorem, reflecting how the analysis of $D$ encodes global geometry \citep{atiyah-singer-1968,friedrich-2000}. Classical sources give the correspondence between spin structures and square roots of $K$, count the $2^{2g}$ spin structures on a genus-$g$ surface, and relate harmonic spinors to the complex geometry of $K^{1/2}$ \citep{lawson-michelsohn-1989}.
 
-\printbibliography
+\bibliographystyle{plainnat} % or abbrvnat, unsrtnat
+\bibliography{references}
 \end{document}
-
 -----------------------------------------------------------
 
 references.bib
